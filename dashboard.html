@@ -6,35 +6,105 @@
     <title>Aurivon Terminal | Active Desk</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-950 text-slate-200 font-sans flex h-screen flex-col overflow-hidden">
+<body class="bg-slate-950 text-white font-sans flex h-screen flex-col overflow-hidden">
 
-    <header class="h-20 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-8 shrink-0">
+    <header class="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-6 shrink-0">
         <div class="flex items-center gap-6">
-            <div class="text-xl font-black italic tracking-tighter text-white">AURIVON <span class="text-blue-500">TERMINAL</span></div>
-            <select onchange="changeSymbol(this.value)" class="bg-slate-800 text-white text-xs font-bold p-2 rounded-lg border border-slate-700 outline-none">
-                <option value="OANDA:XAUUSD">GOLD (XAUUSD)</option>
+            <div class="text-lg font-black italic tracking-tighter">AURIVON <span class="text-blue-500">TERMINAL</span></div>
+            <select onchange="changeSymbol(this.value)" class="bg-slate-950 text-[10px] font-bold p-2 rounded border border-slate-700 uppercase outline-none text-blue-400">
+                <option value="OANDA:XAUUSD">Gold (XAUUSD)</option>
                 <option value="FX:GBPJPY">GBPJPY</option>
                 <option value="FX:EURUSD">EURUSD</option>
-                <option value="FX:USDJPY">USDJPY</option>
-                <option value="BITSTAMP:BTCUSD">BITCOIN</option>
+                <option value="BITSTAMP:BTCUSD">Bitcoin</option>
             </select>
         </div>
 
-        <div class="flex gap-10">
+        <div class="flex gap-8 items-center">
             <div class="text-right">
-                <p class="text-[9px] text-slate-500 uppercase font-bold">Account Balance</p>
-                <p id="balance" class="text-lg font-mono font-bold text-white">$50,000.00</p>
+                <span class="text-[8px] text-slate-500 uppercase block font-bold">Balance</span>
+                <span id="balance" class="text-sm font-mono font-bold">$50,000.00</span>
             </div>
             <div class="text-right">
-                <p class="text-[9px] text-slate-500 uppercase font-bold">Equity</p>
-                <p id="equity-display" class="text-lg font-mono font-bold text-blue-400">Loading...</p>
+                <span class="text-[8px] text-slate-500 uppercase block font-bold">Equity</span>
+                <span id="equity" class="text-sm font-mono font-bold text-blue-400">Loading...</span>
             </div>
             <div class="text-right">
-                <p class="text-[9px] text-slate-500 uppercase font-bold">Floating P/L</p>
-                <p id="profit-display" class="text-lg font-mono font-bold text-green-400">$0.00</p>
+                <span class="text-[8px] text-slate-500 uppercase block font-bold">Total P/L</span>
+                <span id="profit" class="text-sm font-mono font-bold text-green-400">$0.00</span>
             </div>
-            <button onclick="window.location.href='index.html'" class="bg-red-500 hover:bg-red-600 text-white text-[10px] font-bold uppercase px-4 py-2 rounded-lg transition">Secure Exit</button>
+            <button onclick="window.location.href='index.html'" class="bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white border border-red-600/30 text-[9px] font-black uppercase px-3 py-2 rounded transition">Secure Exit</button>
         </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <main class="flex-1 bg-black">
+            <div id="tv_chart_container" class="h-full w-full"></div>
+        </main>
+
+        <aside class="w-72 bg-slate-900 border-l border-slate-800 flex flex-col">
+            <div class="p-6 border-b border-slate-800">
+                <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-6">Market Execution</h3>
+                <div class="mb-6">
+                    <label class="text-[9px] text-slate-500 font-bold uppercase block mb-2">Lot Size</label>
+                    <input type="number" value="0.10" step="0.01" class="w-full bg-black border border-slate-700 p-4 rounded text-white font-mono text-center outline-none">
+                </div>
+                <div class="space-y-3">
+                    <button class="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded uppercase text-xs transition">Buy / Long</button>
+                    <button class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded uppercase text-xs transition">Sell / Short</button>
+                </div>
+            </div>
+
+            <div class="p-6 flex-1 overflow-y-auto">
+                <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Position History</h3>
+                <div class="space-y-3">
+                    <div class="bg-black/50 p-3 rounded border border-slate-800 flex justify-between items-center">
+                        <span class="text-[9px] font-bold">XAUUSD</span>
+                        <span class="text-[9px] font-mono text-green-400 font-bold">+$42.10</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+        let tvWidget = null;
+        function loadChart(symbol) {
+            tvWidget = new TradingView.widget({
+                "autosize": true,
+                "symbol": symbol,
+                "interval": "15",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "container_id": "tv_chart_container",
+                "hide_side_toolbar": false,
+                "allow_symbol_change": true
+            });
+        }
+
+        function changeSymbol(val) {
+            loadChart(val);
+        }
+
+        async function updateFinancials() {
+            const ID = "d769e348-5db8-4df0-97f9-5b45bdb8b8c3";
+            const TOKEN = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzA1MzcwNDUsImlkIjoiZmE0NzZlNmYtYzI3ZC00MTBmLThkZjEtMGM0MDM5ODNiOTM5Iiwicm9sZSI6ImFwaS1rZXkiLCJzdWIiOiJmYTQ3NmU2Zi1jI3ZC00MTBmLThkZjEtMGM0MDM5ODNiOTM5In0.YQvK-qN9p6S4N17v7HhN-7iB6eG8z-6G9y-qN9p6S4N17v7HhN-7iB6eG8z-6G9y";
+            try {
+                const res = await fetch(`https://metastats-api.new-york.agiliumtrade.ai/users/current/accounts/${ID}/summary`, { headers: { 'auth-token': TOKEN } });
+                const data = await res.json();
+                document.getElementById('equity').innerText = "$" + data.equity.toLocaleString();
+                document.getElementById('profit').innerText = "$" + data.profit.toLocaleString();
+                document.getElementById('balance').innerText = "$" + data.balance.toLocaleString();
+            } catch (e) { console.log("Terminal syncing..."); }
+        }
+
+        loadChart("OANDA:XAUUSD");
+        updateFinancials();
+        setInterval(updateFinancials, 60000);
+    </script>
+</body>
+</html>        </div>
     </header>
 
     <div class="flex flex-1 overflow-hidden">
