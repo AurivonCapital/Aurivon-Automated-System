@@ -3,38 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal Login | Aurivon Capital</title>
+    <title>Trader Login | Aurivon Capital</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <style>
-        #particles-js { position: fixed; width: 100%; height: 100%; background-color: #020617; z-index: -1; top: 0; left: 0; }
-        .login-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        #particles-js { position: fixed; width: 100%; height: 100%; background-color: #020617; z-index: 1; top:0; left:0; }
+        .login-container { position: relative; z-index: 10; }
+        .login-card { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
 </head>
-<body class="text-slate-100 font-sans flex items-center justify-center h-screen px-6">
+<body class="bg-slate-950 flex items-center justify-center min-h-screen font-sans">
+
     <div id="particles-js"></div>
 
-    <div class="w-full max-w-md relative z-10">
+    <div class="login-container w-full max-w-md px-6">
         <div class="text-center mb-10">
-            <div class="text-3xl font-black italic tracking-tighter text-white">AURIVON <span class="text-blue-500">CAPITAL</span></div>
-            <p class="text-[10px] text-slate-500 uppercase tracking-[0.3em] font-bold mt-2">Institutional Terminal</p>
+            <div class="text-3xl font-black italic tracking-tighter text-white uppercase">AURIVON <span class="text-blue-600">CAPITAL</span></div>
+            <p class="text-[10px] text-slate-500 uppercase tracking-[0.3em] mt-2 font-bold">Institutional Terminal</p>
         </div>
 
         <div class="login-card p-10 rounded-[2.5rem] shadow-2xl">
             <div class="space-y-6">
                 <div>
                     <label class="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-2">Trader ID</label>
-                    <input id="traderID" type="text" placeholder="Enter ID" class="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition">
+                    <input id="traderID" type="text" placeholder="Enter ID" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition">
                 </div>
                 <div>
                     <label class="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-2">Access Key</label>
-                    <input id="accessKey" type="password" placeholder="••••••••" class="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition">
+                    <input id="accessKey" type="password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition">
                 </div>
-                
-                <button onclick="validateTrader()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl uppercase tracking-widest transition shadow-lg shadow-blue-600/20">
+                <button onclick="checkAccess()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl uppercase tracking-widest transition shadow-lg shadow-blue-600/20">
                     Access Terminal
                 </button>
-                <p id="errorMessage" class="text-red-500 text-[10px] uppercase text-center hidden font-bold">Access Denied: Invalid Credentials</p>
+                <p id="errorMsg" class="text-red-500 text-[10px] font-bold uppercase text-center hidden">Invalid Trader Credentials</p>
+            </div>
+            <p class="text-[9px] text-slate-600 text-center mt-8 uppercase italic">Authorized Access Only</p>
+        </div>
+        
+        <div class="text-center mt-6">
+            <a href="index.html" class="text-xs text-slate-600 hover:text-white transition uppercase tracking-widest">← Exit to Public Site</a>
+        </div>
+    </div>
+
+    <script>
+        function checkAccess() {
+            const id = document.getElementById('traderID').value;
+            const pass = document.getElementById('accessKey').value;
+            
+            // Credentials
+            if ((id === "GohKeeYiong" && pass === "Aurivon2026") || (id === "SuperAdmin" && pass === "Master88")) {
+                window.location.href = "dashboard.html";
+            } else {
+                document.getElementById('errorMsg').classList.remove('hidden');
+            }
+        }
+
+        particlesJS("particles-js", {
+            "particles": { "number": { "value": 40 }, "color": { "value": "#2563eb" }, "shape": { "type": "circle" }, "opacity": { "value": 0.3 }, "size": { "value": 4 }, "line_linked": { "enable": true, "distance": 150, "color": "#2563eb", "opacity": 0.2, "width": 1 }, "move": { "enable": true, "speed": 1 } }
+        });
+    </script>
+</body>
+</html>                <p id="errorMessage" class="text-red-500 text-[10px] uppercase text-center hidden font-bold">Access Denied: Invalid Credentials</p>
             </div>
             <p class="text-[9px] text-slate-600 text-center mt-8 uppercase italic">IP Logged. Unauthorized access prohibited.</p>
         </div>
