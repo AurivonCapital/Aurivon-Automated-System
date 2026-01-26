@@ -1,17 +1,76 @@
-<div class="p-6 border-b border-slate-800 flex justify-between items-center">
-    <div class="flex items-center gap-4">
-        <h1 class="text-xl font-bold uppercase tracking-widest italic">Terminal Access</h1>
-        <span class="bg-blue-600/20 text-blue-500 text-[9px] px-2 py-1 rounded font-bold uppercase">Active: Goh Kee Yiong</span>
-    </div>
-    
-    <div class="flex items-center gap-8">
-        <div class="text-right hidden md:block">
-            <p class="text-[10px] text-slate-500 font-bold uppercase">Total Profit</p>
-            <p id="profit-display" class="text-xl font-mono text-green-400 font-bold">Connecting...</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aurivon Terminal | Active Desk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-white font-sans flex h-screen overflow-hidden">
+
+    <aside class="w-20 lg:w-64 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-8">
+        <div class="text-2xl font-black italic text-blue-500 mb-12 lg:block hidden">AURIVON</div>
+        <div class="space-y-8 flex-1">
+            <div class="text-blue-500 bg-blue-600/10 p-3 rounded-xl border border-blue-600/20">Dashboard</div>
         </div>
-        
-        <button onclick="window.location.href='index.html'" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/30 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">
-            Secure Exit
-        </button>
-    </div>
-</div>
+    </aside>
+
+    <main class="flex-1 flex flex-col">
+        <div class="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50 backdrop-blur-md">
+            <div class="flex items-center gap-4">
+                <h1 class="text-xl font-bold uppercase tracking-widest italic">Terminal Access</h1>
+                <span class="bg-blue-600/20 text-blue-500 text-[9px] px-2 py-1 rounded font-bold uppercase">Active: Authorized Trader</span>
+            </div>
+            
+            <div class="flex items-center gap-8">
+                <div class="text-right hidden md:block">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Total Profit</p>
+                    <p id="profit-display" class="text-xl font-mono text-green-400 font-bold">Connecting...</p>
+                </div>
+                
+                <button onclick="window.location.href='index.html'" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/30 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">
+                    Secure Exit
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-1 p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 overflow-hidden">
+            <div class="lg:col-span-3 bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
+                <div id="tradingview_chart" class="h-full w-full"></div>
+            </div>
+
+            <div class="bg-slate-900 rounded-3xl border border-slate-800 p-6 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-6 text-center">Execution Desk</h2>
+                    <label class="text-[9px] text-slate-500 font-bold uppercase mb-2 block">Lot Size</label>
+                    <input type="number" value="0.10" class="w-full bg-slate-950 border border-slate-800 p-4 rounded-xl text-white font-mono mb-6">
+                </div>
+
+                <div class="space-y-4">
+                    <button class="w-full bg-green-600 hover:bg-green-700 text-white font-black py-5 rounded-2xl uppercase tracking-widest transition shadow-lg shadow-green-600/10">Buy / Long</button>
+                    <button class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-5 rounded-2xl uppercase tracking-widest transition shadow-lg shadow-red-600/10">Sell / Short</button>
+                    <p class="text-[8px] text-slate-600 text-center uppercase font-bold tracking-widest">Execution Engine v2.4</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+        new TradingView.widget({
+            "autosize": true, "symbol": "OANDA:XAUUSD", "interval": "15", "theme": "dark", "style": "1", "locale": "en", "container_id": "tradingview_chart"
+        });
+
+        async function updateStats() {
+            const ID = "d769e348-5db8-4df0-97f9-5b45bdb8b8c3";
+            const TOKEN = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzA1MzcwNDUsImlkIjoiZmE0NzZlNmYtYzI3ZC00MTBmLThkZjEtMGM0MDM5ODNiOTM5Iiwicm9sZSI6ImFwaS1rZXkiLCJzdWIiOiJmYTQ3NmU2Zi1jI3ZC00MTBmLThkZjEtMGM0MDM5ODNiOTM5In0.YQvK-qN9p6S4N17v7HhN-7iB6eG8z-6G9y-qN9p6S4N17v7HhN-7iB6eG8z-6G9y";
+            try {
+                const res = await fetch(`https://metastats-api.new-york.agiliumtrade.ai/users/current/accounts/${ID}/summary`, { headers: { 'auth-token': TOKEN } });
+                const data = await res.json();
+                document.getElementById('profit-display').innerText = "$" + data.profit.toLocaleString();
+            } catch (e) { console.log("Reconnecting..."); }
+        }
+        updateStats(); setInterval(updateStats, 60000);
+    </script>
+</body>
+</html>
