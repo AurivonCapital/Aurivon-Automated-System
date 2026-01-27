@@ -71,23 +71,19 @@
         });
 
         // Fetch MetaApi Data (Note: Move Token to Backend later for security!)
-        async function updateStats() {
-            const ID = "d769e348-5db8-4df0-97f9-5b45bdb8b8c3";
-            const TOKEN = "PASTE_YOUR_TOKEN_HERE"; // Hide this later!
-            
-            try {
-                const res = await fetch(`https://metastats-api.new-york.agiliumtrade.ai/users/current/accounts/${ID}/summary`, { 
-                    headers: { 'auth-token': TOKEN } 
-                });
-                const data = await res.json();
-                
-                document.getElementById('equity').innerText = "$" + data.equity.toLocaleString();
-                document.getElementById('profit').innerText = "$" + data.profit.toLocaleString();
-                document.getElementById('balance').innerText = "$" + data.balance.toLocaleString();
-            } catch (e) { 
-                console.log("Reconnecting to MetaApi..."); 
-            }
-        }
+        async function updateFinancials() {
+    try {
+        // Pointing to your new Vercel Bridge
+        const res = await fetch('/api/getStats'); 
+        const data = await res.json();
+        
+        document.getElementById('equity').innerText = "$" + data.equity.toLocaleString();
+        document.getElementById('profit').innerText = "$" + data.profit.toLocaleString();
+        document.getElementById('balance').innerText = "$" + data.balance.toLocaleString();
+    } catch (e) {
+        console.log("Connecting to secure vault...");
+    }
+}
 
         updateStats();
         setInterval(updateStats, 30000); // Sync every 30 seconds
