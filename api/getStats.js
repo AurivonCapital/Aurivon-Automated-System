@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     const ID = "d769e348-5db8-4df0-97f9-5b45bdb8b8c3";
     
     try {
-        // Targeted to 'new-york' because your account says 'cloud-g2'
+        // Targeted to 'new-york' because your dashboard says 'cloud-g2'
         const url = `https://metastats-api-v1.new-york.agiliumtrade.ai/users/current/accounts/${ID}/summary`;
         
         const response = await fetch(url, {
@@ -23,6 +23,7 @@ export default async function handler(req, res) {
             });
         }
 
+        // This will finally return your Balance, Equity, and Profit
         return res.status(200).json(data);
     } catch (error) {
         return res.status(500).json({ error: "Bridge Failed", message: error.message });
