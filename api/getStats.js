@@ -4,28 +4,11 @@ export default async function handler(req, res) {
 
     try {
         const response = await fetch(`https://metastats-api.new-york.agiliumtrade.ai/users/current/accounts/${ID}/summary`, {
-            method: 'GET',
-            headers: { 
-                'auth-token': TOKEN,
-                'Accept': 'application/json'
-            }
+            headers: { 'auth-token': TOKEN }
         });
-
         const data = await response.json();
-
-        if (!response.ok) {
-            return res.status(response.status).json({ 
-                error: "MetaApi rejected the key", 
-                status: response.status,
-                tokenPresent: !!TOKEN 
-            });
-        }
-
-        return res.status(200).json(data);
+        res.status(200).json(data);
     } catch (error) {
-        return res.status(500).json({ 
-            error: "Server Crash", 
-            message: error.message 
-        });
+        res.status(500).json({ error: "Connection Failed" });
     }
 }
