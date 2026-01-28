@@ -18,7 +18,10 @@ export default async function handler(req, res) {
         // This sends the balance, equity, and profit back to your dashboard
         res.status(200).json(data);
     } catch (error) {
-        console.error("API Error:", error);
-        res.status(500).json({ error: "Failed to fetch data from MetaApi" });
+        // This will print the actual error on your tablet screen
+        res.status(500).json({ 
+            error: "Connection Failed", 
+            details: error.message,
+            tokenExists: !!process.env.METAAPI_TOKEN 
+        });
     }
-}
