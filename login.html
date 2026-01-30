@@ -13,15 +13,12 @@
     </style>
 </head>
 <body class="bg-slate-950 flex items-center justify-center min-h-screen font-sans">
-
     <div id="particles-js"></div>
-
     <div class="login-container w-full max-w-md px-6">
         <div class="text-center mb-10">
             <div class="text-3xl font-black italic tracking-tighter text-white uppercase">AURIVON <span class="text-blue-600">CAPITAL</span></div>
             <p class="text-[10px] text-slate-500 uppercase tracking-[0.3em] mt-2 font-bold">Institutional Terminal</p>
         </div>
-
         <div class="login-card p-10 rounded-[2.5rem] shadow-2xl">
             <div class="space-y-6">
                 <div>
@@ -32,18 +29,9 @@
                     <label class="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-2">Access Key</label>
                     <input id="accessKey" type="password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition">
                 </div>
-                
-                <button onclick="checkAccess()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl uppercase tracking-widest transition shadow-lg shadow-blue-600/20">
-                    Access Terminal
-                </button>
-
+                <button onclick="checkAccess()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl uppercase tracking-widest transition shadow-lg shadow-blue-600/20">Access Terminal</button>
                 <p id="errorMsg" class="text-red-500 text-[10px] font-bold uppercase text-center hidden">Invalid Trader Credentials</p>
             </div>
-            <p class="text-[9px] text-slate-600 text-center mt-8 uppercase italic">IP Logged. Authorized Access Only</p>
-        </div>
-        
-        <div class="text-center mt-6">
-            <a href="index.html" class="text-xs text-slate-600 hover:text-white transition uppercase tracking-widest">← Exit to Public Site</a>
         </div>
     </div>
 
@@ -51,34 +39,26 @@
         function checkAccess() {
             const idInput = document.getElementById('traderID').value;
             const passInput = document.getElementById('accessKey').value;
-            const errorElement = document.getElementById('errorMsg');
 
+            // --- TRADER DATABASE ---
+            // When a new trader buys an evaluation, add them to this list:
             const authorized = [
-                { user: "GohKeeYiong", pass: "Aurivon2026" },
-                { user: "SuperAdmin", pass: "Master88" }
+                { user: "SuperAdmin", pass: "Master88", role: "admin", account: "ALL" },
+                { user: "GohKeeYiong", pass: "Aurivon2026", role: "trader", account: "d769e348-5db8-4df0-97f9-5b45bdb8b8c3" }
             ];
 
-            const isValid = authorized.some(person => person.user === idInput && person.pass === passInput);
+            const person = authorized.find(p => p.user === idInput && p.pass === passInput);
 
-            if (isValid) {
+            if (person) {
+                // Save login info to browser memory
+                localStorage.setItem('currentUser', JSON.stringify(person));
                 window.location.href = "dashboard.html";
             } else {
-                errorElement.classList.remove('hidden');
-                setTimeout(() => errorElement.classList.add('hidden'), 3000);
+                document.getElementById('errorMsg').classList.remove('hidden');
             }
         }
 
-        particlesJS("particles-js", {
-            "particles": { 
-                "number": { "value": 40 }, 
-                "color": { "value": "#2563eb" }, 
-                "shape": { "type": "circle" }, 
-                "opacity": { "value": 0.3 }, 
-                "size": { "value": 4 }, 
-                "line_linked": { "enable": true, "distance": 150, "color": "#2563eb", "opacity": 0.2, "width": 1 }, 
-                "move": { "enable": true, "speed": 1 } 
-            }
-        });
+        particlesJS("particles-js", { "particles": { "number": { "value": 40 }, "color": { "value": "#2563eb" }, "move": { "enable": true, "speed": 1 } } });
     </script>
 </body>
 </html>
