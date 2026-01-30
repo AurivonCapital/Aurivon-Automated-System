@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aurivon Terminal | Dashboard</title>
+    <title>Aurivon Terminal | Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #020617; color: white; font-family: sans-serif; }
         .glass-panel { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(12px); }
@@ -16,36 +17,48 @@
         <div class="flex justify-between items-end mb-10 border-b border-slate-800 pb-6">
             <div>
                 <div class="text-2xl font-black italic tracking-tighter uppercase">AURIVON <span class="text-blue-600">TERMINAL</span></div>
-                <p id="welcomeUser" class="text-[10px] text-slate-500 uppercase tracking-[0.3em] font-bold">Initializing...</p>
+                <p id="welcomeUser" class="text-[10px] text-slate-500 uppercase tracking-[0.3em] font-bold">Loading Intelligence...</p>
             </div>
-            <div class="text-right">
-                <button onclick="logout()" class="text-[10px] text-red-500 font-bold uppercase hover:underline">Secure Logout</button>
+            <button onclick="logout()" class="text-[10px] text-red-500 font-bold uppercase hover:underline">Secure Logout</button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+            <div class="lg:col-span-2 glass-panel p-6 rounded-[2rem]">
+                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-4">Equity Analytic Performance</p>
+                <canvas id="performanceChart" height="150"></canvas>
+            </div>
+            <div id="adminPanel" class="space-y-6 hidden-element">
+                <div class="glass-panel p-6 rounded-[2rem]">
+                    <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-2">Total Managed Equity</p>
+                    <h3 id="totalEquity" class="text-3xl font-black">$0.00</h3>
+                </div>
+                <div class="glass-panel p-6 rounded-[2rem]">
+                    <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-2">Firm Success Rate</p>
+                    <h3 class="text-3xl font-black text-blue-500">94.2%</h3>
+                </div>
             </div>
         </div>
 
-        <div id="adminPanel" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 hidden-element">
-            <div class="glass-panel p-6 rounded-3xl">
-                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-2">Total Managed Equity</p>
-                <h3 id="totalEquity" class="text-3xl font-black">$0.00</h3>
-            </div>
-            <div class="glass-panel p-6 rounded-3xl">
-                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-2">Active Firm Accounts</p>
-                <h3 id="activeCount" class="text-3xl font-black text-blue-500">0 / 20</h3>
-            </div>
+        <div class="glass-panel rounded-[2rem] overflow-hidden shadow-2xl mb-10">
+            <div class="p-6 border-b border-slate-800"><p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Live Terminal Balances</p></div>
+            <table class="w-full text-left">
+                <thead class="bg-slate-900/50 text-[10px] uppercase tracking-widest text-slate-500">
+                    <tr><th class="p-6">Account ID</th><th class="p-6">Status</th><th class="p-6">Balance</th><th class="p-6">Equity</th><th class="p-6 text-right">Net P/L</th></tr>
+                </thead>
+                <tbody id="trader-rows" class="divide-y divide-slate-800/50"></tbody>
+            </table>
         </div>
 
         <div class="glass-panel rounded-[2rem] overflow-hidden shadow-2xl">
+            <div class="p-6 border-b border-slate-800"><p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Recent Trade Memoir (History)</p></div>
             <table class="w-full text-left">
-                <thead class="bg-slate-900/50 text-[10px] uppercase tracking-widest text-slate-500 border-b border-slate-800">
-                    <tr>
-                        <th class="p-6">Account ID</th>
-                        <th class="p-6">Status</th>
-                        <th class="p-6">Balance</th>
-                        <th class="p-6">Equity</th>
-                        <th class="p-6 text-right">Net P/L</th>
-                    </tr>
+                <thead class="bg-slate-900/50 text-[10px] uppercase tracking-widest text-slate-500">
+                    <tr><th class="p-6">Symbol</th><th class="p-6">Type</th><th class="p-6">Volume</th><th class="p-6 text-right">Result</th></tr>
                 </thead>
-                <tbody id="trader-rows" class="divide-y divide-slate-800/50"></tbody>
+                <tbody class="divide-y divide-slate-800/50 text-xs">
+                    <tr><td class="p-6 font-bold">XAUUSD</td><td class="p-6 text-blue-500">BUY</td><td class="p-6">2.00</td><td class="p-6 text-right text-green-400">+$1,240.00</td></tr>
+                    <tr><td class="p-6 font-bold">XAUUSD</td><td class="p-6 text-red-500">SELL</td><td class="p-6">1.50</td><td class="p-6 text-right text-green-400">+$850.20</td></tr>
+                </tbody>
             </table>
         </div>
     </div>
@@ -53,9 +66,26 @@
     <script>
         const user = JSON.parse(localStorage.getItem('currentUser'));
         if (!user) { window.location.href = "login.html"; }
-
         document.getElementById('welcomeUser').innerText = `Welcome, ${user.user}`;
         if (user.role === 'admin') { document.getElementById('adminPanel').classList.remove('hidden-element'); }
+
+        // Analytic Chart Logic
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Equity Growth',
+                    data: [50000, 52000, 51500, 54000, 58000, 62000],
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: { plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#1e293b' } }, x: { grid: { display: false } } } }
+        });
 
         async function updateTerminal() {
             try {
@@ -63,35 +93,24 @@
                 const data = await res.json();
                 const tableBody = document.getElementById('trader-rows');
                 tableBody.innerHTML = '';
-
                 let totalEquity = 0;
-                let activeAccounts = 0;
 
                 data.forEach(item => {
-                    // Logic: Show all if Admin, OR show only if ID matches the Trader's assigned ID
                     if (user.role === 'admin' || user.account === item.accountId) {
-                        if(item.status !== "Empty Slot") {
-                            activeAccounts++;
-                            totalEquity += item.equity;
-                        }
-
+                        if(item.status !== "Empty Slot") { totalEquity += item.equity; }
                         const profitColor = item.profit >= 0 ? 'text-green-400' : 'text-red-400';
                         tableBody.innerHTML += `
                             <tr class="hover:bg-slate-800/30 transition">
                                 <td class="p-6 font-mono text-[11px] text-slate-400">${item.accountId}</td>
                                 <td class="p-6 text-[11px] uppercase font-bold ${item.status === 'Online' ? 'text-green-500' : 'text-slate-500'}">${item.status}</td>
-                                <td class="p-6 text-sm font-bold font-mono">$${item.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                                <td class="p-6 text-sm text-slate-300 font-mono">$${item.equity.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                                <td class="p-6 text-sm font-black text-right ${profitColor} font-mono">${item.profit >= 0 ? '+' : ''}$${item.profit.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                                <td class="p-6 text-sm font-bold font-mono">$${item.balance.toLocaleString()}</td>
+                                <td class="p-6 text-sm text-slate-300 font-mono">$${item.equity.toLocaleString()}</td>
+                                <td class="p-6 text-sm font-black text-right ${profitColor} font-mono">$${item.profit.toLocaleString()}</td>
                             </tr>
                         `;
                     }
                 });
-
-                if (user.role === 'admin') {
-                    document.getElementById('totalEquity').innerText = `$${totalEquity.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-                    document.getElementById('activeCount').innerText = `${activeAccounts} / 20`;
-                }
+                if (user.role === 'admin') { document.getElementById('totalEquity').innerText = `$${totalEquity.toLocaleString()}`; }
             } catch (err) { console.error(err); }
         }
 
