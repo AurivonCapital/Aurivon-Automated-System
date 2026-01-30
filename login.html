@@ -40,8 +40,8 @@
             const idInput = document.getElementById('traderID').value;
             const passInput = document.getElementById('accessKey').value;
 
-            // --- TRADER DATABASE ---
-            // When a new trader buys an evaluation, add them to this list:
+            // --- THE TRADER DATABASE ---
+            // Add new traders here after they purchase the evaluation.
             const authorized = [
                 { user: "SuperAdmin", pass: "Master88", role: "admin", account: "ALL" },
                 { user: "GohKeeYiong", pass: "Aurivon2026", role: "trader", account: "d769e348-5db8-4df0-97f9-5b45bdb8b8c3" }
@@ -50,15 +50,13 @@
             const person = authorized.find(p => p.user === idInput && p.pass === passInput);
 
             if (person) {
-                // Save login info to browser memory
                 localStorage.setItem('currentUser', JSON.stringify(person));
                 window.location.href = "dashboard.html";
             } else {
                 document.getElementById('errorMsg').classList.remove('hidden');
             }
         }
-
-        particlesJS("particles-js", { "particles": { "number": { "value": 40 }, "color": { "value": "#2563eb" }, "move": { "enable": true, "speed": 1 } } });
+        particlesJS("particles-js", { "particles": { "number": { "value": 40 }, "color": { "value": "#2563eb" }, "shape": { "type": "circle" }, "opacity": { "value": 0.3 }, "size": { "value": 4 }, "line_linked": { "enable": true, "distance": 150, "color": "#2563eb", "opacity": 0.2, "width": 1 }, "move": { "enable": true, "speed": 1 } } });
     </script>
 </body>
 </html>
