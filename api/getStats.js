@@ -1,20 +1,14 @@
 import MetaApi from 'metaapi.cloud-sdk';
 
-/**
- * This function connects to MetaApi, loops through your trader accounts,
- * and gathers their balance and profit data to show on your dashboard.
- */
 export default async function dashboardHandler(req, res) {
-  // 1. Setup your credentials
+  // Use the secret token from your Vercel settings
   const token = process.env.METAAPI_TOKEN;
-  
-  // This is the main "engine" that talks to MetaApi
   const api = new MetaApi(token);
 
-  // 2. List your 20 Account IDs here
-  // Replace the "ACCOUNT_ID_X" placeholders with your actual IDs from MetaApi
+  // YOUR 20 TRADER IDs
+  // Replace these with your actual IDs from the MetaApi dashboard
   const traderAccounts = [
-    "d769e348-5db8-4df0-97f9-5b45bdb8b8c3", 
+    "d769e348-5db8-4df0-97f9-5b45bdb8b8c3",
     "ACCOUNT_ID_2",
     "ACCOUNT_ID_3",
     "ACCOUNT_ID_4",
@@ -37,23 +31,21 @@ export default async function dashboardHandler(req, res) {
   ];
 
   try {
-    // If there is no token, we can't proceed
     if (!token) {
-      return res.status(500).json({ error: "Missing METAAPI_TOKEN in environment variables." });
+      return res.status(500).json({ error: "API Token missing in Vercel Environment Variables" });
     }
 
     const metaStats = api.metaStatsApi;
 
-    // 3. Fetch data for all accounts at the same time
+    // This fetches data for all 20 accounts at once
     const dashboardData = await Promise.all(
       traderAccounts.map(async (id) => {
-        // If the ID is still a placeholder, skip it
-        if (id.includes("ACCOUNT_ID")) return { accountId: id, status: "Empty Slot" };
+        if (id.includes("ACCOUNT_ID")) {
+          return { accountId: id, status: "Empty Slot", balance: 0, equity: 0, profit: 0 };
+        }
 
         try {
-          // Get the statistics (Balance, Equity, Profit)
           const metrics = await metaStats.getMetrics(id);
-          
           return {
             accountId: id,
             status: "Online",
@@ -62,21 +54,14 @@ export default async function dashboardHandler(req, res) {
             profit: metrics.profit || 0
           };
         } catch (err) {
-          // If one specific account fails, show it as offline
-          return { 
-            accountId: id, 
-            status: "Offline", 
-            error: "Check if MetaStats is enabled" 
-          };
+          return { accountId: id, status: "Offline", balance: 0, equity: 0, profit: 0 };
         }
       })
     );
 
-    // 4. Send the final list of 20 results back to your website
     return res.status(200).json(dashboardData);
 
   } catch (error) {
-    // If the whole system crashes, show this error
-    return res.status(500).json({ error: "System Error: " + error.message });
+    return res.status(500).json({ error: "Server Error: " + error.message });
   }
 }
