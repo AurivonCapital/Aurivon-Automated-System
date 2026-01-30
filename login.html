@@ -5,19 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trader Login | Aurivon Capital</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <style>
-        #particles-js { position: fixed; width: 100%; height: 100%; background-color: #020617; z-index: 1; top:0; left:0; }
-        .login-container { position: relative; z-index: 10; }
-        .login-card { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body { background-color: #020617; color: white; font-family: sans-serif; }
+        .login-card { background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
     </style>
 </head>
-<body class="bg-slate-950 flex items-center justify-center min-h-screen font-sans">
-    <div id="particles-js"></div>
-    <div class="login-container w-full max-w-md px-6">
-        <div class="text-center mb-10">
-            <div class="text-3xl font-black italic tracking-tighter text-white uppercase">AURIVON <span class="text-blue-600">CAPITAL</span></div>
-            <p class="text-[10px] text-slate-500 uppercase tracking-[0.3em] mt-2 font-bold">Institutional Terminal</p>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-md px-6">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black italic uppercase tracking-tighter">AURIVON <span class="text-blue-600">CAPITAL</span></h1>
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-2">Institutional Terminal Access</p>
         </div>
         <div class="login-card p-10 rounded-[2.5rem] shadow-2xl">
             <div class="space-y-6">
@@ -39,11 +36,35 @@
         function checkAccess() {
             const idInput = document.getElementById('traderID').value;
             const passInput = document.getElementById('accessKey').value;
+
+            // --- THE 20-TRADER SECURE DATABASE ---
+            // Update these slots as you sell evaluations. 
+            // Role 'admin' sees all. Role 'trader' sees ONLY their assigned account.
             const authorized = [
                 { user: "SuperAdmin", pass: "Master88", role: "admin", account: "ALL" },
-                { user: "GohKeeYiong", pass: "Aurivon2026", role: "trader", account: "d769e348-5db8-4df0-97f9-5b45bdb8b8c3" }
+                { user: "GohKeeYiong", pass: "Aurivon2026", role: "trader", account: "d769e348-5db8-4df0-97f9-5b45bdb8b8c3" },
+                { user: "Trader_3", pass: "PASS_3", role: "trader", account: "ACCOUNT_ID_3" },
+                { user: "Trader_4", pass: "PASS_4", role: "trader", account: "ACCOUNT_ID_4" },
+                { user: "Trader_5", pass: "PASS_5", role: "trader", account: "ACCOUNT_ID_5" },
+                { user: "Trader_6", pass: "PASS_6", role: "trader", account: "ACCOUNT_ID_6" },
+                { user: "Trader_7", pass: "PASS_7", role: "trader", account: "ACCOUNT_ID_7" },
+                { user: "Trader_8", pass: "PASS_8", role: "trader", account: "ACCOUNT_ID_8" },
+                { user: "Trader_9", pass: "PASS_9", role: "trader", account: "ACCOUNT_ID_9" },
+                { user: "Trader_10", pass: "PASS_10", role: "trader", account: "ACCOUNT_ID_10" },
+                { user: "Trader_11", pass: "PASS_11", role: "trader", account: "ACCOUNT_ID_11" },
+                { user: "Trader_12", pass: "PASS_12", role: "trader", account: "ACCOUNT_ID_12" },
+                { user: "Trader_13", pass: "PASS_13", role: "trader", account: "ACCOUNT_ID_13" },
+                { user: "Trader_14", pass: "PASS_14", role: "trader", account: "ACCOUNT_ID_14" },
+                { user: "Trader_15", pass: "PASS_15", role: "trader", account: "ACCOUNT_ID_15" },
+                { user: "Trader_16", pass: "PASS_16", role: "trader", account: "ACCOUNT_ID_16" },
+                { user: "Trader_17", pass: "PASS_17", role: "trader", account: "ACCOUNT_ID_17" },
+                { user: "Trader_18", pass: "PASS_18", role: "trader", account: "ACCOUNT_ID_18" },
+                { user: "Trader_19", pass: "PASS_19", role: "trader", account: "ACCOUNT_ID_19" },
+                { user: "Trader_20", pass: "PASS_20", role: "trader", account: "ACCOUNT_ID_20" }
             ];
+
             const person = authorized.find(p => p.user === idInput && p.pass === passInput);
+
             if (person) {
                 localStorage.setItem('currentUser', JSON.stringify(person));
                 window.location.href = "dashboard.html";
@@ -51,7 +72,6 @@
                 document.getElementById('errorMsg').classList.remove('hidden');
             }
         }
-        particlesJS("particles-js", { "particles": { "number": { "value": 40 }, "color": { "value": "#2563eb" }, "shape": { "type": "circle" }, "opacity": { "value": 0.3 }, "size": { "value": 4 }, "line_linked": { "enable": true, "distance": 150, "color": "#2563eb", "opacity": 0.2, "width": 1 }, "move": { "enable": true, "speed": 1 } } });
     </script>
 </body>
 </html>
