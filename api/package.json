@@ -1,9 +1,9 @@
 {
-  "name": "aurivon-capital-project",
+  "name": "aurivon-capital-api",
   "version": "1.0.0",
-  "description": "Trader Dashboard for Aurivon Capital",
-  "main": "index.html",
+  "main": "index.js",
   "dependencies": {
-    "metaapi.cloud-sdk": "^13.0.0"
+    "stripe": "^14.0.0",
+    "metaapi.cloud-sdk": "^25.0.0"
   }
 }
