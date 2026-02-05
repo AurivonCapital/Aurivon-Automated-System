@@ -33,15 +33,16 @@ export default async function handler(req, res) {
       console.log(`Creating account for: ${traderEmail}`);
       
       // This is where we talk to MetaApi
-      const account = await metaApi.metatraderAccountApi.createAccount({
-        name: `Trader: ${traderEmail}`,
-        type: 'cloud',
-        plan: 'v1',
-        provisioningProfileId: '51365c22-c0d0-4e35-9f25-1a386bf140bb', // You get this from MetaApi
-        login: '123456', // Replace with a login from your pool
-        password: 'YourPassword',
-        server: 'ICMarkets-Demo01'
-      });
+      const account = await metaapi.metatraderAccountApi.createAccount({
+  name: `Trader: ${traderEmail}`,
+  type: 'cloud',
+  plan: 'v1',
+  provisioningProfileId: '51365c22-c0d0-4e35-9f25-1a386bf140bb', // Your ID
+  login: 'YOUR_EIGHTCAP_LOGIN',    // Replace with your real MT4 number
+  password: process.env.MT4_PASSWORD,   // Replace with your real MT4 master password
+  server: 'Eightcap-Demo2',         // Use the correct Eightcap server name
+  platform: 'mt4'                  // Specify you are using MT4
+});
 
       console.log('Account created successfully:', account.id);
     } catch (error) {
