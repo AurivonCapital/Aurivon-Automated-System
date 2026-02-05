@@ -1,103 +1,449 @@
-// --- AUTHENTICATION & SESSION ---
-const user = JSON.parse(localStorage.getItem('currentUser'));
-if (!user) { window.location.href = "login.html"; }
-document.getElementById('welcomeUser').innerText = `Authorized Access: ${user.user}`;
-if (user.role === 'admin') { document.getElementById('adminPanel').classList.remove('hidden-admin'); }
+<!DOCTYPE html>
 
-// --- TRADINGVIEW CHART ---
-let tvWidget;
-function loadChart(symbol = "FX:EURUSD") {
-    tvWidget = new TradingView.widget({
-        "autosize": true, "symbol": symbol, "interval": "60", "timezone": "Etc/UTC",
-        "theme": "dark", "style": "1", "locale": "en", "container_id": "tradingview_widget",
-        "backgroundColor": "rgba(2, 6, 23, 1)", "gridColor": "rgba(30, 41, 59, 1)"
-    });
-}
-function changeSymbol(newSym) { loadChart(newSym); }
-loadChart();
+<html lang="en">
 
-// --- REFINED ANALYTICS (Chart.js) ---
-const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: { 
-        y: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#64748b', font: { size: 10 } } },
-        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } }
-    }
-};
+<head>
 
-// 1. Refined Equity Curve
-const performanceChart = new Chart(document.getElementById('performanceChart'), {
-    type: 'line',
-    data: { labels: ['W1', 'W2', 'W3', 'W4'], datasets: [{ data: [1000, 1200, 1150, 1400], borderColor: '#3b82f6', borderWidth: 2, tension: 0.4, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.1)', pointRadius: 0 }] },
-    options: chartOptions
-});
+    <meta charset="UTF-8">
 
-// 2. Refined Bar Chart (Rounded)
-const riskChart = new Chart(document.getElementById('riskChart'), {
-    type: 'bar',
-    data: { labels: ['M', 'T', 'W', 'T', 'F'], datasets: [{ data: [1, 2.5, 0.5, 3.2, 1.1], backgroundColor: '#ef4444', borderRadius: 4 }] },
-    options: chartOptions
-});
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-// 3. Refined Pie Chart
-const pairPieChart = new Chart(document.getElementById('pairPieChart'), {
-    type: 'doughnut',
-    data: { labels: ['EURUSD', 'XAUUSD', 'GBPUSD'], datasets: [{ data: [40, 35, 25], backgroundColor: ['#3b82f6', '#f59e0b', '#8b5cf6'], borderWeight: 0, hoverOffset: 4 }] },
-    options: { cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', usePointStyle: true, font: { size: 10 } } } } }
-});
+    <title>Aurivon Terminal | Professional Trader Desktop</title>
 
-// --- TRADING ACTIONS ---
-async function handleClose(accountId, positionId) {
-    const lotInput = document.getElementById(`lots-${positionId}`);
-    const volume = lotInput ? lotInput.value : null;
-    
-    if(!confirm(`Close ${volume ? volume + ' lots' : 'full position'}?`)) return;
+    <script src="https://cdn.tailwindcss.com"></script>
 
-    try {
-        const response = await fetch('/api/closePosition', {
-            method: 'POST',
-            body: JSON.stringify({ accountId, positionId, volume })
-        });
-        if(response.ok) alert("Trade Closed Successfully");
-        updateTerminal();
-    } catch (err) { alert("Error closing trade"); }
-}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-// --- UPDATED TERMINAL (Removed ID, Added Buttons) ---
-async function updateTerminal() {
-    try {
-        const res = await fetch('/api/getStats'); 
-        const data = await res.json();
-        const tableBody = document.getElementById('trader-rows');
-        tableBody.innerHTML = '';
-        
-        data.forEach(item => {
-            if (user.role === 'admin' || user.account === item.accountId) {
-                const profitColor = item.profit >= 0 ? 'text-green-400' : 'text-red-400';
-                tableBody.innerHTML += `
-                    <tr class="hover:bg-white/5 transition border-b border-slate-800/50">
-                        <td class="p-4"><span class="bg-slate-800 px-2 py-1 rounded text-[9px] text-slate-300">TRADER_${item.login || 'LIVE'}</span></td>
-                        <td class="p-4 text-[10px] ${item.status === 'Online' ? 'text-green-500' : 'text-slate-500'}">● ${item.status}</td>
-                        <td class="p-4 font-bold">$${item.balance.toLocaleString()}</td>
-                        <td class="p-4 text-slate-300">$${item.equity.toLocaleString()}</td>
-                        <td class="p-4 text-right">
-                            <div class="flex flex-col items-end">
-                                <span class="font-black ${profitColor}">$${item.profit.toLocaleString()}</span>
-                                <div class="flex gap-2 mt-2">
-                                    <input id="lots-${item.positionId}" type="number" placeholder="Lots" class="w-16 bg-slate-900 border border-slate-700 rounded text-[9px] p-1">
-                                    <button onclick="handleClose('${item.accountId}', '${item.positionId}')" class="bg-red-500/20 text-red-500 text-[9px] px-2 py-1 rounded font-bold hover:bg-red-500 hover:text-white transition">CLOSE</button>
-                                </div>
-                            </div>
-                        </td>
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+
+    <style>
+
+        body { background-color: #020617; color: white; font-family: 'Inter', sans-serif; }
+
+        .glass-panel { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(12px); }
+
+        .trading-btn { transition: all 0.2s; border: 1px solid transparent; }
+
+        .trading-btn:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
+
+        .hidden-admin { display: none !important; }
+
+    </style>
+
+</head>
+
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+
+        <div class="flex justify-between items-center mb-8 border-b border-slate-800 pb-6">
+
+            <div>
+
+                <div class="text-2xl font-black italic uppercase tracking-tighter">AURIVON <span class="text-blue-600">TERMINAL</span></div>
+
+                <p id="welcomeUser" class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Initializing Secure Session...</p>
+
+            </div>
+
+            <div class="flex items-center gap-4">
+
+                <select id="symbolSelect" onchange="changeSymbol(this.value)" class="bg-slate-900 border border-slate-700 text-xs p-2 rounded text-blue-400 font-bold uppercase">
+
+                    <optgroup label="Majors">
+
+                        <option value="FX:EURUSD">EURUSD</option>
+
+                        <option value="FX:GBPUSD">GBPUSD</option>
+
+                        <option value="FX:USDJPY">USDJPY</option>
+
+                    </optgroup>
+
+                    <optgroup label="Metals & Energy">
+
+                        <option value="OANDA:XAUUSD">XAUUSD (Gold)</option>
+
+                        <option value="OANDA:XAGUSD">XAGUSD (Silver)</option>
+
+                        <option value="TVC:USOIL">WTI Oil</option>
+
+                        <option value="TVC:UKOIL">Brent Oil</option>
+
+                    </optgroup>
+
+                </select>
+
+                <button onclick="logout()" class="text-[10px] text-red-500 font-bold uppercase hover:bg-red-500/10 p-2 rounded">Logout</button>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="grid grid-cols-1 gap-6 mb-8">
+
+            <div class="glass-panel rounded-[1.5rem] overflow-hidden relative">
+
+                <div class="absolute top-4 right-4 z-10 flex gap-2">
+
+                    <button class="trading-btn bg-red-600 px-6 py-2 rounded-lg font-black text-sm uppercase shadow-lg shadow-red-900/20">Sell</button>
+
+                    <button class="trading-btn bg-green-600 px-6 py-2 rounded-lg font-black text-sm uppercase shadow-lg shadow-green-900/20">Buy</button>
+
+                </div>
+
+                <div id="tradingview_widget" class="h-[500px]"></div>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="glass-panel rounded-[1.5rem] overflow-hidden mb-8">
+
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+
+                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Live Account Surveillance (20 Traders Max)</p>
+
+                <div id="adminPanel" class="hidden-admin flex gap-4">
+
+                     <span class="text-[10px] text-blue-400 font-bold">TOTAL EQUITY: <span id="totalEquity">$0.00</span></span>
+
+                     <span class="text-[10px] text-slate-400 font-bold">ACTIVE: <span id="activeCount">0/20</span></span>
+
+                </div>
+
+            </div>
+
+            <div class="overflow-x-auto">
+
+                <table class="w-full text-left">
+
+                    <thead class="bg-slate-900/50 text-[10px] uppercase tracking-widest text-slate-500">
+
+                        <tr>
+
+                            <th class="p-4">Account ID</th>
+
+                            <th class="p-4">Status</th>
+
+                            <th class="p-4">Balance</th>
+
+                            <th class="p-4">Equity</th>
+
+                            <th class="p-4 text-right">Live P/L</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="trader-rows" class="divide-y divide-slate-800/50">
+
+                        </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="mb-6 flex flex-wrap gap-4 items-center">
+
+            <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Analytics Filter:</p>
+
+            <input type="date" id="startDate" class="bg-slate-900 border border-slate-700 text-[10px] p-1 rounded">
+
+            <input type="date" id="endDate" class="bg-slate-900 border border-slate-700 text-[10px] p-1 rounded">
+
+            <button onclick="filterHistory()" class="bg-blue-600 text-[10px] px-4 py-1 rounded font-bold uppercase hover:bg-blue-500">Fetch History</button>
+
+        </div>
+
+
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
+            <div class="glass-panel p-6 rounded-[1.5rem]">
+
+                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-4">MetaApi Equity Curve</p>
+
+                <canvas id="performanceChart" height="200"></canvas>
+
+            </div>
+
+            <div class="glass-panel p-6 rounded-[1.5rem]">
+
+                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-4">Drawdown & Risk (%)</p>
+
+                <canvas id="riskChart" height="200"></canvas>
+
+            </div>
+
+            <div class="glass-panel p-6 rounded-[1.5rem]">
+
+                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-4">Traded Symbol Exposure</p>
+
+                <canvas id="pairPieChart" height="200"></canvas>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="glass-panel rounded-[1.5rem] overflow-hidden shadow-2xl">
+
+            <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+
+                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Historical Trade Memoir</p>
+
+                <button class="text-[10px] bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded border border-slate-700 transition">Download CSV</button>
+
+            </div>
+
+            <table class="w-full text-left text-xs">
+
+                <thead class="bg-slate-900/50 text-[10px] uppercase tracking-widest text-slate-500">
+
+                    <tr>
+
+                        <th class="p-4">Date</th>
+
+                        <th class="p-4">Symbol</th>
+
+                        <th class="p-4">Type</th>
+
+                        <th class="p-4">Lots</th>
+
+                        <th class="p-4 text-right">Profit</th>
+
                     </tr>
-                `;
-            }
-        });
-    } catch (err) { console.error("Sync Error:", err); }
-}
 
-function logout() { localStorage.removeItem('currentUser'); window.location.href = "login.html"; }
-updateTerminal();
-setInterval(updateTerminal, 30000);
+                </thead>
+
+                <tbody id="history-rows" class="divide-y divide-slate-800/50">
+
+                     <tr><td colspan="5" class="p-10 text-center italic text-slate-500 uppercase">Synchronizing with MetaApi...</td></tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+
+    <script>
+
+        // --- AUTHENTICATION & SESSION ---
+
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+
+        if (!user) { window.location.href = "login.html"; }
+
+        document.getElementById('welcomeUser').innerText = `Authorized Access: ${user.user}`;
+
+        if (user.role === 'admin') { document.getElementById('adminPanel').classList.remove('hidden-admin'); }
+
+
+
+        // --- TRADINGVIEW CHART INTEGRATION ---
+
+        let tvWidget;
+
+        function loadChart(symbol = "FX:EURUSD") {
+
+            tvWidget = new TradingView.widget({
+
+                "autosize": true,
+
+                "symbol": symbol,
+
+                "interval": "60",
+
+                "timezone": "Etc/UTC",
+
+                "theme": "dark",
+
+                "style": "1",
+
+                "locale": "en",
+
+                "toolbar_bg": "#f1f3f6",
+
+                "enable_publishing": false,
+
+                "hide_top_toolbar": false,
+
+                "save_image": false,
+
+                "container_id": "tradingview_widget",
+
+                "backgroundColor": "rgba(2, 6, 23, 1)",
+
+                "gridColor": "rgba(30, 41, 59, 1)"
+
+            });
+
+        }
+
+        function changeSymbol(newSym) { loadChart(newSym); }
+
+        loadChart(); // Initialize first time
+
+
+
+        // --- ANALYTICS INITIALIZATION (Chart.js) ---
+
+        // 1. Equity Curve
+
+        const perfCtx = document.getElementById('performanceChart').getContext('2d');
+
+        const performanceChart = new Chart(perfCtx, {
+
+            type: 'line',
+
+            data: { labels: ['W1', 'W2', 'W3', 'W4'], datasets: [{ label: 'Equity', data: [1000, 1200, 1150, 1400], borderColor: '#2563eb', tension: 0.4, fill: true, backgroundColor: 'rgba(37, 99, 235, 0.1)' }] },
+
+            options: { plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#1e293b' } }, x: { grid: { display: false } } } }
+
+        });
+
+
+
+        // 2. Risk/Drawdown Chart
+
+        const riskCtx = document.getElementById('riskChart').getContext('2d');
+
+        const riskChart = new Chart(riskCtx, {
+
+            type: 'bar',
+
+            data: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], datasets: [{ label: 'Drawdown', data: [1, 2.5, 0.5, 3.2, 1.1], backgroundColor: '#ef4444' }] },
+
+            options: { plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#1e293b' } } } }
+
+        });
+
+
+
+        // 3. Pair Distribution (Pie)
+
+        const pieCtx = document.getElementById('pairPieChart').getContext('2d');
+
+        const pairPieChart = new Chart(pieCtx, {
+
+            type: 'doughnut',
+
+            data: { labels: ['EURUSD', 'XAUUSD', 'GBPUSD'], datasets: [{ data: [40, 35, 25], backgroundColor: ['#2563eb', '#f59e0b', '#8b5cf6'], borderWeight: 0 }] },
+
+            options: { plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 } } } } }
+
+        });
+
+
+
+        // --- METAAPI INTEGRATION (Placeholder logic) ---
+
+        async function updateTerminal() {
+
+            try {
+
+                // Keep your MetaApi backend URL here
+
+                const res = await fetch('/api/getStats'); 
+
+                const data = await res.json();
+
+                const tableBody = document.getElementById('trader-rows');
+
+                tableBody.innerHTML = '';
+
+                
+
+                let totalEquity = 0;
+
+                let activeAccounts = 0;
+
+
+
+                data.forEach(item => {
+
+                    if (user.role === 'admin' || user.account === item.accountId) {
+
+                        if(item.status !== "Empty Slot") { totalEquity += item.equity; activeAccounts++; }
+
+                        const profitColor = item.profit >= 0 ? 'text-green-400' : 'text-red-400';
+
+                        tableBody.innerHTML += `
+
+                            <tr class="hover:bg-white/5 transition">
+
+                                <td class="p-4 font-mono text-[11px] text-slate-400">${item.accountId}</td>
+
+                                <td class="p-4 text-[10px] font-bold ${item.status === 'Online' ? 'text-green-500' : 'text-slate-500'}">● ${item.status}</td>
+
+                                <td class="p-4 font-bold">$${item.balance.toLocaleString()}</td>
+
+                                <td class="p-4 text-slate-300">$${item.equity.toLocaleString()}</td>
+
+                                <td class="p-4 font-black text-right ${profitColor}">$${item.profit.toLocaleString()}</td>
+
+                            </tr>
+
+                        `;
+
+                    }
+
+                });
+
+
+
+                if (user.role === 'admin') {
+
+                    document.getElementById('totalEquity').innerText = `$${totalEquity.toLocaleString()}`;
+
+                    document.getElementById('activeCount').innerText = `${activeAccounts} / 20`;
+
+                }
+
+            } catch (err) { console.error("Data Sync Error:", err); }
+
+        }
+
+
+
+        function filterHistory() {
+
+            console.log("Filtering MetaApi history from", document.getElementById('startDate').value);
+
+            // Logic to fetch from MetaApi based on dates would go here
+
+        }
+
+
+
+        function logout() { localStorage.removeItem('currentUser'); window.location.href = "login.html"; }
+
+        
+
+        // Initial Fetch
+
+        updateTerminal();
+
+        // Refresh every 30 seconds
+
+        setInterval(updateTerminal, 30000);
+
+    </script>
+
+</body>
+
+</html>
