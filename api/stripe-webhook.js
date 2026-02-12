@@ -14,6 +14,7 @@ export default async function handler(req, res) {
         // Verify the payment is real and from Stripe
         event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
+        console.error(`Webhook Error: ${err.message}`);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
@@ -28,19 +29,21 @@ export default async function handler(req, res) {
             // This tells MetaApi to create the actual Eightcap account
             await metaApi.metatraderAccountApi.createAccount({
                 name: `Aurivon - ${customerEmail}`,
-                type: 'cloud',
-                platform: 'mt4', // or 'mt5' depending on your preference
-                region: 'vint-hill', // Standard region for Eightcap
-                manualConfiguration: {
-                    server: 'Eightcap-Demo',
-                    login: 0, // MetaApi will generate these or you can link existing
-                    password: 'TraderPassword123' 
-                }
+                type: 'cloud-g2', // Updated to the recommended high-performance type
+                platform: 'mt4',
+                region: 'vint-hill',
+                server: 'Eightcap-Demo', 
+                // !!! PASTE YOUR PROVISIONING PROFILE ID BELOW !!!
+                provisioningProfileId: '39ff1aa7-8fc0-44b8-9798-77fb192213c6', 
+                magic: 123456, // Required by MetaApi to track trades
+                login: '0',    // Set as string '0' so MetaApi knows to wait for credentials
+                password: 'TraderPassword123',
+                quoteStreamingIntervalInSeconds: 2.5
             });
 
             console.log("Account Created Successfully");
         } catch (error) {
-            console.error("MetaApi Error:", error.message);
+            console.error("MetaApi Error details:", error.message);
         }
     }
 
