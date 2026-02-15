@@ -3,103 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Memoir | Randall Goh | Aurivon Capital</title>
+    <title>The Memoir | Randall Goh</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <style>
-        #particles-js {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            background-color: #0f172a; /* Slate 900 */
-            z-index: -1;
-            top: 0;
-            left: 0;
-        }
-        .content-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
+        body { background-color: #0f172a; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
-<body class="text-slate-200 font-sans leading-relaxed">
-
-    <nav class="p-6 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex justify-between items-center sticky top-0 z-50">
-        <div class="text-2xl font-black italic tracking-tighter">AURIVON <span class="text-blue-600">CAPITAL</span></div>
-        <div class="hidden md:flex space-x-8 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+<body class="text-slate-300 font-sans leading-relaxed">
+    <nav class="p-6 flex justify-between items-center sticky top-0 z-50 bg-[#0f172a]/80 backdrop-blur-md">
+        <div class="text-2xl font-black italic tracking-tighter text-white uppercase">AURIVON <span class="text-blue-600">CAPITAL</span></div>
+        <div class="hidden md:flex space-x-8 text-xs font-bold uppercase tracking-widest text-slate-400">
             <a href="index.html" class="hover:text-white transition">Home</a>
             <a href="about.html" class="text-blue-500">Memoir</a>
             <a href="strategy.html" class="hover:text-white transition">Recruitment</a>
             <a href="login.html" class="hover:text-white transition">Trader Login</a>
         </div>
+        <a href="https://t.me/YOUR_LINK" class="bg-blue-600 text-white px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest">Global Desk</a>
     </nav>
 
-    <div id="particles-js"></div>
-
-    <main class="relative z-10 max-w-4xl mx-auto py-24 px-6">
-        <header class="text-center mb-16">
-            <h1 class="text-xs font-bold text-blue-500 uppercase tracking-[0.5em] mb-4">The Founder</h1>
-            <h2 class="text-5xl md:text-7xl font-black italic uppercase tracking-tighter text-white">Randall Goh's <br>Memoir</h2>
-        </header>
-
-        <div class="content-card p-8 md:p-16 rounded-[3rem] shadow-2xl">
-            <div class="space-y-8 text-lg md:text-xl font-light italic text-slate-300 border-l-2 border-blue-600 pl-6 md:pl-10">
-                <p class="first-letter:text-6xl first-letter:font-black first-letter:text-blue-600 first-letter:mr-3 first-letter:float-left">
-                    The market doesn't offer second chances; it only offers lessons. I remember the cold silence of the early London sessions, where the only thing louder than the ticking clock was the sound of my own discipline being tested. 
-                </p>
-
-                <p>
-                    Aurivon Capital wasn't a product of luck. It was forged in the fire of high-stakes volatility and refined through thousands of hours dissecting price action. I didn't build this firm to just be another prop house—I built it to be an elite desk for hunters.
-                </p>
-
-                <p>
-                    When I started, I realized that retail traders were set up to fail. They lacked the institutional grit and the capital required to survive the storm. Aurivon is my answer to that. It is the bridge between raw talent and institutional power.
-                </p>
-
-                <p>
-                    Today, we stand as a global proprietary firm, but the core remains the same: We trade with intent. We execute with precision. We are Aurivon.
-                </p>
-            </div>
-
-            <div class="mt-16 pt-8 border-t border-slate-800 flex flex-col items-center">
-                <div class="text-center">
-                    <p class="text-white font-black italic uppercase tracking-widest">Randall Goh</p>
-                    <p class="text-[10px] text-blue-500 uppercase font-bold tracking-[0.2em] mt-1">Founder & Chief Strategist</p>
+    <main class="max-w-4xl mx-auto px-6 py-20">
+        <div class="glass-panel p-8 md:p-16 rounded-[2rem] shadow-2xl relative overflow-hidden">
+            <div class="absolute left-0 top-0 w-1 h-full bg-blue-600"></div>
+            <article class="space-y-8 text-lg italic text-slate-400">
+                <p>volatility and refined through thousands of hours dissecting price action. I didn't build this firm to just be another prop house—I built it to be an elite desk for hunters.</p>
+                <p>When I started, I realized that retail traders were set up to fail. They lacked the institutional grit and the capital required to survive the storm. Aurivon is my answer to that. It is the bridge between raw talent and institutional power.</p>
+                <p>Today, we stand as a global proprietary firm, but the core remains the same: We trade with intent. We execute with precision. We are Aurivon.</p>
+                
+                <div class="pt-16 flex flex-col items-center">
+                    <img src="img/randall.jpg" alt="Randall Goh" class="w-28 h-28 rounded-full border-2 border-blue-600 mb-6 object-cover shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+                    <h2 class="text-white text-xl font-black tracking-[0.2em] uppercase">RANDALL GOH</h2>
+                    <p class="text-blue-500 text-[10px] font-bold tracking-[0.4em] uppercase mt-2">FOUNDER & CHIEF STRATEGIST</p>
                 </div>
-            </div>
-        </div>
-
-        <div class="text-center mt-20">
-            <p class="text-slate-500 text-sm uppercase tracking-widest mb-6 italic">Ready to write your own legacy?</p>
-            <a href="strategy.html" class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-12 py-5 rounded-full font-black uppercase text-sm tracking-widest transition shadow-xl shadow-blue-600/30">
-                Join the Recruitment Rally
-            </a>
+            </article>
         </div>
     </main>
 
-    <footer class="py-12 text-center border-t border-slate-900 mt-20">
-        <p class="text-[10px] text-slate-600 uppercase tracking-widest font-bold">&copy; 2026 Aurivon Capital | Legacy and Grit</p>
+    <footer class="py-12 text-center border-t border-slate-800/30 mt-10">
+        <p class="text-[9px] text-slate-600 uppercase tracking-widest mb-2">&copy; 2026 Aurivon Capital</p>
+        <a href="disclaimer.html" class="text-[9px] text-blue-900 font-bold uppercase hover:text-blue-600 transition">Risk Disclaimer & Legal</a>
     </footer>
-
-    <script>
-        /* Particles.js Config for Blue Connecting Dots */
-        particlesJS("particles-js", {
-            "particles": {
-                "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
-                "color": { "value": "#2563eb" },
-                "shape": { "type": "circle" },
-                "opacity": { "value": 0.5, "random": false },
-                "size": { "value": 3, "random": true },
-                "line_linked": { "enable": true, "distance": 150, "color": "#2563eb", "opacity": 0.4, "width": 1 },
-                "move": { "enable": true, "speed": 1.5, "direction": "none", "random": false, "straight": false, "out_mode": "out", "bounce": false }
-            },
-            "interactivity": {
-                "events": { "onhover": { "enable": true, "mode": "grab" }, "onclick": { "enable": true, "mode": "push" } },
-                "modes": { "grab": { "distance": 140, "line_linked": { "opacity": 1 } } }
-            },
-            "retina_detect": true
-        });
-    </script>
 </body>
 </html>
