@@ -11,7 +11,7 @@
             position: fixed;
             width: 100%;
             height: 100%;
-            background-color: #0f172a; /* Slate 900 */
+            background-color: #0f172a;
             z-index: -1;
             top: 0;
             left: 0;
@@ -26,7 +26,7 @@
 <body class="text-slate-200 font-sans leading-relaxed">
 
     <nav class="p-6 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex justify-between items-center sticky top-0 z-50">
-        <div class="text-2xl font-black italic tracking-tighter">AURIVON <span class="text-blue-600">CAPITAL</span></div>
+        <div class="text-2xl font-black italic tracking-tighter uppercase">AURIVON <span class="text-blue-600">CAPITAL</span></div>
         <div class="hidden md:flex space-x-8 text-[10px] font-bold uppercase tracking-widest text-slate-500">
             <a href="index.html" class="hover:text-white transition">Home</a>
             <a href="about.html" class="text-blue-500">Memoir</a>
@@ -63,7 +63,16 @@
             </div>
 
             <div class="mt-16 pt-12 border-t border-slate-800 flex flex-col items-center">
-                <img src="img/randall.jpg" alt="Randall Goh" class="w-28 h-28 rounded-full border-2 border-blue-600 mb-6 object-cover shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+                <div class="relative">
+                    <img src="randall.jpg" alt="Randall Goh" 
+                         class="w-32 h-32 rounded-full border-2 border-blue-600 mb-6 object-cover shadow-[0_0_20px_rgba(37,99,235,0.4)] bg-slate-800"
+                         onerror="this.style.display='none'; document.getElementById('initials-fallback').style.display='flex';">
+                    
+                    <div id="initials-fallback" style="display:none;" 
+                         class="w-32 h-32 rounded-full border-2 border-blue-600 mb-6 items-center justify-center bg-slate-900 text-white font-black text-2xl italic uppercase">
+                         RG
+                    </div>
+                </div>
                 <div class="text-center">
                     <p class="text-white font-black italic uppercase tracking-widest text-xl">Randall Goh</p>
                     <p class="text-[10px] text-blue-500 uppercase font-bold tracking-[0.2em] mt-2">Founder & Chief Strategist</p>
@@ -84,20 +93,15 @@
     </footer>
 
     <script>
-        /* Particles.js Config for Blue Connecting Dots */
         particlesJS("particles-js", {
             "particles": {
                 "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
                 "color": { "value": "#2563eb" },
                 "shape": { "type": "circle" },
-                "opacity": { "value": 0.5, "random": false },
+                "opacity": { "value": 0.5 },
                 "size": { "value": 3, "random": true },
                 "line_linked": { "enable": true, "distance": 150, "color": "#2563eb", "opacity": 0.4, "width": 1 },
-                "move": { "enable": true, "speed": 1.5, "direction": "none", "random": false, "straight": false, "out_mode": "out", "bounce": false }
-            },
-            "interactivity": {
-                "events": { "onhover": { "enable": true, "mode": "grab" }, "onclick": { "enable": true, "mode": "push" } },
-                "modes": { "grab": { "distance": 140, "line_linked": { "opacity": 1 } } }
+                "move": { "enable": true, "speed": 1.5 }
             },
             "retina_detect": true
         });
