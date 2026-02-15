@@ -11,6 +11,7 @@ export default async function handler(req, res) {
     let event;
 
     try {
+        // This line uses the NEW whsec_ key you just updated in Vercel
         event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
         console.error(`Webhook Error: ${err.message}`);
@@ -22,24 +23,24 @@ export default async function handler(req, res) {
         const customerEmail = session.customer_details.email;
 
         try {
-            console.log(`Creating MT5 MetaApi account for: ${customerEmail}`);
+            console.log(`Creating MT5 account for: ${customerEmail}`);
 
             await metaApi.metatraderAccountApi.createAccount({
                 name: `Aurivon - ${customerEmail}`,
                 type: 'cloud-g2',
-                platform: 'mt5', // Fully switched to MT5 to match your profile
+                platform: 'mt5', // Matched to your MT5 Provisioning Profile
                 region: 'vint-hill',
                 server: 'Eightcap-Demo', 
-                provisioningProfileId: '39ff1aa7-8fc0-44b8-9798-77fb192213c6',
+                provisioningProfileId: '39ff1aa7-8fc0-44b8-9798-77fb192213c6', // Your exact Profile ID
                 magic: 123456,
                 login: '0', 
                 password: 'TraderPassword123',
                 quoteStreamingIntervalInSeconds: 2.5
             });
 
-            console.log("MT5 Account Created Successfully");
+            console.log("SUCCESS: Account Provisioned in MetaApi");
         } catch (error) {
-            console.error("MetaApi Error Details:", error.message);
+            console.error("MetaApi Creation Failed:", error.message);
         }
     }
 
