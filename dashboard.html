@@ -56,7 +56,7 @@
 
         <div class="glass-panel rounded-[1.5rem] overflow-hidden mb-8">
             <div class="p-4 border-b border-slate-800 flex justify-between items-center">
-                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Live Account Surveillance (20 Traders Max)</p>
+                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Live Account Surveillance</p>
                 <div id="adminPanel" class="hidden-admin flex gap-4">
                      <span class="text-[10px] text-blue-400 font-bold">TOTAL EQUITY: <span id="totalEquity">$0.00</span></span>
                      <span class="text-[10px] text-slate-400 font-bold">ACTIVE: <span id="activeCount">0/20</span></span>
@@ -66,12 +66,11 @@
                 <table class="w-full text-left">
                     <thead class="bg-slate-900/50 text-[10px] uppercase tracking-widest text-slate-500">
                         <tr>
-                            <th class="p-4">Account ID</th>
-                            <th class="p-4">Status</th>
+                            <th class="p-4">Trader Name</th> <th class="p-4">Status</th>
                             <th class="p-4">Balance</th>
                             <th class="p-4">Equity</th>
                             <th class="p-4 text-right">Live P/L</th>
-                        </tr>
+                            <th class="p-4 text-center">Action</th> </tr>
                     </thead>
                     <tbody id="trader-rows" class="divide-y divide-slate-800/50">
                         </tbody>
@@ -124,13 +123,11 @@
     </div>
 
     <script>
-        // --- AUTHENTICATION & SESSION ---
         const user = JSON.parse(localStorage.getItem('currentUser'));
         if (!user) { window.location.href = "login.html"; }
         document.getElementById('welcomeUser').innerText = `Authorized Access: ${user.user}`;
         if (user.role === 'admin') { document.getElementById('adminPanel').classList.remove('hidden-admin'); }
 
-        // --- TRADINGVIEW CHART INTEGRATION ---
         let tvWidget;
         function loadChart(symbol = "FX:EURUSD") {
             tvWidget = new TradingView.widget({
@@ -141,20 +138,15 @@
                 "theme": "dark",
                 "style": "1",
                 "locale": "en",
-                "toolbar_bg": "#f1f3f6",
-                "enable_publishing": false,
-                "hide_top_toolbar": false,
-                "save_image": false,
                 "container_id": "tradingview_widget",
                 "backgroundColor": "rgba(2, 6, 23, 1)",
                 "gridColor": "rgba(30, 41, 59, 1)"
             });
         }
         function changeSymbol(newSym) { loadChart(newSym); }
-        loadChart(); // Initialize first time
+        loadChart();
 
-        // --- ANALYTICS INITIALIZATION (Chart.js) ---
-        // 1. Equity Curve
+        // Chart Initialization (Performance, Risk, Pair)
         const perfCtx = document.getElementById('performanceChart').getContext('2d');
         const performanceChart = new Chart(perfCtx, {
             type: 'line',
@@ -162,7 +154,6 @@
             options: { plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#1e293b' } }, x: { grid: { display: false } } } }
         });
 
-        // 2. Risk/Drawdown Chart
         const riskCtx = document.getElementById('riskChart').getContext('2d');
         const riskChart = new Chart(riskCtx, {
             type: 'bar',
@@ -170,7 +161,6 @@
             options: { plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#1e293b' } } } }
         });
 
-        // 3. Pair Distribution (Pie)
         const pieCtx = document.getElementById('pairPieChart').getContext('2d');
         const pairPieChart = new Chart(pieCtx, {
             type: 'doughnut',
@@ -178,10 +168,8 @@
             options: { plugins: { legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 } } } } }
         });
 
-        // --- METAAPI INTEGRATION (Placeholder logic) ---
         async function updateTerminal() {
             try {
-                // Keep your MetaApi backend URL here
                 const res = await fetch('/api/getStats'); 
                 const data = await res.json();
                 const tableBody = document.getElementById('trader-rows');
@@ -194,13 +182,20 @@
                     if (user.role === 'admin' || user.account === item.accountId) {
                         if(item.status !== "Empty Slot") { totalEquity += item.equity; activeAccounts++; }
                         const profitColor = item.profit >= 0 ? 'text-green-400' : 'text-red-400';
+                        
+                        // NOTE: Replacing Account ID with user.user for the signed-in person
+                        const displayId = (user.account === item.accountId) ? user.user : item.accountId;
+
                         tableBody.innerHTML += `
                             <tr class="hover:bg-white/5 transition">
-                                <td class="p-4 font-mono text-[11px] text-slate-400">${item.accountId}</td>
+                                <td class="p-4 font-bold text-[11px] text-blue-400 uppercase">${displayId}</td>
                                 <td class="p-4 text-[10px] font-bold ${item.status === 'Online' ? 'text-green-500' : 'text-slate-500'}">● ${item.status}</td>
                                 <td class="p-4 font-bold">$${item.balance.toLocaleString()}</td>
                                 <td class="p-4 text-slate-300">$${item.equity.toLocaleString()}</td>
                                 <td class="p-4 font-black text-right ${profitColor}">$${item.profit.toLocaleString()}</td>
+                                <td class="p-4 text-center">
+                                    <button onclick="closePosition('${item.accountId}')" class="bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 text-[9px] px-3 py-1 rounded border border-red-500/50 transition font-bold uppercase">Close</button>
+                                </td>
                             </tr>
                         `;
                     }
@@ -213,16 +208,19 @@
             } catch (err) { console.error("Data Sync Error:", err); }
         }
 
-        function filterHistory() {
-            console.log("Filtering MetaApi history from", document.getElementById('startDate').value);
-            // Logic to fetch from MetaApi based on dates would go here
+        // --- NEW FEATURE: CLOSE POSITION ---
+        async function closePosition(accountId) {
+            if(confirm(`Are you sure you want to close all positions for account ${accountId}?`)) {
+                console.log(`Sending close signal for: ${accountId}`);
+                // You will need to link this to your MetaApi 'close' endpoint on your server
+                // Example: await fetch('/api/closeAll', { method: 'POST', body: JSON.stringify({ accountId }) });
+            }
         }
 
+        function filterHistory() { console.log("Filtering history..."); }
         function logout() { localStorage.removeItem('currentUser'); window.location.href = "login.html"; }
         
-        // Initial Fetch
         updateTerminal();
-        // Refresh every 30 seconds
         setInterval(updateTerminal, 30000);
     </script>
 </body>
