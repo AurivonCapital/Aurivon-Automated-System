@@ -1,71 +1,73 @@
 import MetaApi from 'metaapi.cloud-sdk';
 const Stripe = require('stripe');
+import { Resend } from 'resend';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const metaApi = new MetaApi(process.env.METAAPI_TOKEN);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// VERCEL CONFIG: Required to process Stripe data correctly
-export const config = {
-  api: {
-    bodyParser: false, 
-  },
-};
+export const config = { api: { bodyParser: false } };
 
-// HELPER: Reads the raw data from Stripe
 async function getRawBody(readable) {
-  const chunks = [];
-  for await (const chunk of readable) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-  }
-  return Buffer.concat(chunks);
+    const chunks = [];
+    for await (const chunk of readable) {
+        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    }
+    return Buffer.concat(chunks);
 }
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
-
     const sig = req.headers['stripe-signature'];
     const rawBody = await getRawBody(req);
-
     let event;
 
     try {
         event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
-        console.error(`❌ Webhook Error: ${err.message}`);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    // --- AUTOMATION STARTS HERE ---
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         const customerEmail = session.customer_details.email;
 
-        try {
-            console.log(`🚀 AUTOMATION: Creating Demo Account for ${customerEmail}`);
+        // 1. GENERATE PERMANENT ACCESS KEY (Random 8 characters)
+        const permanentKey = Math.random().toString(36).slice(-8).toUpperCase();
 
-            // This creates the account on Eightcap Demo automatically
+        try {
+            // 2. CREATE ACCOUNT (We store the key in the Account Name for searchability)
             const account = await metaApi.metatraderAccountApi.createAccount({
-                name: `Aurivon - ${customerEmail}`,
+                name: `Aurivon|${customerEmail}|${permanentKey}`,
                 type: 'cloud-g2',
-                platform: 'mt5', 
+                platform: 'mt5',
                 region: 'vint-hill',
-                server: 'Eightcap-Demo', 
+                server: 'Eightcap-Demo',
                 provisioningProfileId: '39ff1aa7-8fc0-44b8-9798-77fb192213c6',
                 magic: 123456,
-                // These pull from your Vercel Environment Variables
-                login: process.env.MT4_LOGIN || '0', 
-                password: process.env.MT4_PASSWORD || 'TraderPassword123',
-                quoteStreamingIntervalInSeconds: 2.5
+                login: process.env.MT4_LOGIN || '0',
+                password: 'TraderPassword123'
             });
 
-            console.log(`✅ SUCCESS: Account Created! ID: ${account.id}`);
-            
-            // FUTURE STEP: Here we could automatically email the trader their Login ID.
-            
+            // 3. SEND AUTOMATED EMAIL
+            await resend.emails.send({
+                from: 'Aurivon Capital <onboarding@resend.dev>', // Update this later with your domain
+                to: customerEmail,
+                subject: 'Your Aurivon Institutional Access',
+                html: `
+                    <h1>Welcome to the Inner Circle</h1>
+                    <p>Your evaluation has been provisioned.</p>
+                    <p><strong>Trader ID:</strong> ${customerEmail}</p>
+                    <p><strong>Access Key:</strong> ${permanentKey}</p>
+                    <br>
+                    <p>Login here: <a href="https://your-vercel-url.com/login.html">Trader Terminal</a></p>
+                `
+            });
+
+            console.log(`✅ Automated Setup Complete for ${customerEmail}`);
         } catch (error) {
-            console.error("❌ AUTOMATION FAILED:", error.message);
+            console.error("❌ Automation Error:", error.message);
         }
     }
-
     res.json({ received: true });
 }
