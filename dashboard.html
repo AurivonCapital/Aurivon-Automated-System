@@ -143,12 +143,34 @@
         }
 
         async function executeAction(actionType) {
-            const actionText = actionType === 'FULL' ? "Closing Full" : "Closing 50%";
-            console.log(`${actionText} for ID: ${currentActiveTradeId}`);
+            // Get current lots from the modal text to calculate partial
+            const infoText = document.getElementById('modalInfo').innerText;
+            const currentLots = parseFloat(infoText.split('Lots: ')[1]);
             
-            // This is where you call your api/close.js later
-            alert(`MetaApi Request Sent: ${actionText} Position ${currentActiveTradeId}`);
-            toggleModal();
+            // If PARTIAL, close 50%. If FULL, volume is undefined so MetaApi closes all.
+            const volumeToClose = (actionType === 'PARTIAL') ? (currentLots / 2).toFixed(2) : null;
+
+            try {
+                const response = await fetch('/api/close-position', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        accountId: user.account,
+                        positionId: currentActiveTradeId,
+                        volume: volumeToClose
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    toggleModal();
+                    updateTerminal(); 
+                } else {
+                    alert("Close Error: " + result.error);
+                }
+            } catch (err) {
+                alert("Server Connection Error");
+            }
         }
 
         // --- TRADING VIEW & CHARTS ---
@@ -170,9 +192,23 @@
         // --- PLACE TRADE ---
         async function placeTrade(side) {
             const size = document.getElementById('lotSize').value;
-            const sym = document.getElementById('symbolSelect').value.split(':')[1] || "EURUSD";
-            alert(`Opening ${side} ${size} lots on ${sym}`);
-            // Call fetch('/api/trade'...) here
+            const rawSym = document.getElementById('symbolSelect').value;
+            const sym = rawSym.split(':')[1] || rawSym;
+            
+            try {
+                const response = await fetch('/api/trade', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        accountId: user.account,
+                        symbol: sym,
+                        type: side === 'BUY' ? 'ORDER_TYPE_BUY' : 'ORDER_TYPE_SELL',
+                        lots: parseFloat(size)
+                    })
+                });
+                const result = await response.json();
+                if (result.success) updateTerminal();
+            } catch (err) { console.error(err); }
         }
 
         // --- REFRESH TERMINAL ---
@@ -182,7 +218,6 @@
                 const data = await res.json();
                 
                 if (data.success) {
-                    // Update Surveillance
                     document.getElementById('trader-rows').innerHTML = `
                         <tr class="hover:bg-white/5">
                             <td class="p-4 font-bold text-blue-400 text-[11px]">${user.user}</td>
@@ -193,7 +228,6 @@
                             <td class="p-4 text-center">---</td>
                         </tr>`;
 
-                    // Update Positions + Added the 'x' logic here
                     const posBody = document.getElementById('position-rows');
                     if (data.positions && data.positions.length > 0) {
                         posBody.innerHTML = '';
