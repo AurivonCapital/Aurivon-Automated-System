@@ -4,14 +4,14 @@ const Stripe = require('stripe');
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const metaApi = new MetaApi(process.env.METAAPI_TOKEN);
 
-// THIS IS THE CRITICAL FIX FOR VERCEL
+// VERCEL CONFIG: Required to process Stripe data correctly
 export const config = {
   api: {
-    bodyParser: false, // This tells Vercel to let Stripe handle the data format
+    bodyParser: false, 
   },
 };
 
-// Helper function to read the raw data from Stripe
+// HELPER: Reads the raw data from Stripe
 async function getRawBody(readable) {
   const chunks = [];
   for await (const chunk of readable) {
@@ -24,28 +24,27 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     const sig = req.headers['stripe-signature'];
-    const rawBody = await getRawBody(req); // Use our helper to read the data correctly
+    const rawBody = await getRawBody(req);
 
     let event;
 
     try {
-        // Use the RAW body and the Signature to verify it's really Stripe calling
         event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
         console.error(`❌ Webhook Error: ${err.message}`);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    // When a payment is successful:
+    // --- AUTOMATION STARTS HERE ---
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         const customerEmail = session.customer_details.email;
 
         try {
-            console.log(`🚀 Creating MT5 account for: ${customerEmail}`);
+            console.log(`🚀 AUTOMATION: Creating Demo Account for ${customerEmail}`);
 
-            // This is your official MetaApi connection logic
-            await metaApi.metatraderAccountApi.createAccount({
+            // This creates the account on Eightcap Demo automatically
+            const account = await metaApi.metatraderAccountApi.createAccount({
                 name: `Aurivon - ${customerEmail}`,
                 type: 'cloud-g2',
                 platform: 'mt5', 
@@ -53,14 +52,18 @@ export default async function handler(req, res) {
                 server: 'Eightcap-Demo', 
                 provisioningProfileId: '39ff1aa7-8fc0-44b8-9798-77fb192213c6',
                 magic: 123456,
-                login: '0', 
-                password: 'TraderPassword123',
+                // These pull from your Vercel Environment Variables
+                login: process.env.MT4_LOGIN || '0', 
+                password: process.env.MT4_PASSWORD || 'TraderPassword123',
                 quoteStreamingIntervalInSeconds: 2.5
             });
 
-            console.log("✅ SUCCESS: Account Provisioned in MetaApi");
+            console.log(`✅ SUCCESS: Account Created! ID: ${account.id}`);
+            
+            // FUTURE STEP: Here we could automatically email the trader their Login ID.
+            
         } catch (error) {
-            console.error("❌ MetaApi Creation Failed:", error.message);
+            console.error("❌ AUTOMATION FAILED:", error.message);
         }
     }
 
