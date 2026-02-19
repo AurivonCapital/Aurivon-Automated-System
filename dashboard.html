@@ -54,8 +54,8 @@
                         <input type="number" id="lotSize" value="0.01" step="0.01" min="0.01" class="bg-slate-800 border border-slate-600 text-white text-xs w-16 p-1 rounded focus:outline-none focus:border-blue-500">
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="placeTrade('SELL')" class="trading-btn bg-red-600 px-4 py-2 rounded-lg font-black text-[11px] uppercase shadow-lg shadow-red-900/20">Sell</button>
-                        <button onclick="placeTrade('BUY')" class="trading-btn bg-green-600 px-4 py-2 rounded-lg font-black text-[11px] uppercase shadow-lg shadow-green-900/20">Buy</button>
+                        <button onclick="placeTrade('SELL')" class="trading-btn bg-red-600 px-4 py-2 rounded-lg font-black text-[11px] uppercase shadow-lg shadow-red-900/20 w-16">Sell</button>
+                        <button onclick="placeTrade('BUY')" class="trading-btn bg-green-600 px-4 py-2 rounded-lg font-black text-[11px] uppercase shadow-lg shadow-green-900/20 w-16">Buy</button>
                     </div>
                 </div>
                 <div id="tradingview_widget" class="h-[500px]"></div>
@@ -63,8 +63,9 @@
         </div>
 
         <div class="glass-panel rounded-[1.5rem] overflow-hidden mb-8 border-l-4 border-blue-500">
-            <div class="p-4 border-b border-slate-800">
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center">
                 <p class="text-[10px] text-blue-400 uppercase font-bold tracking-widest">Active Market Exposure (Open Positions)</p>
+                <button onclick="closeAllPositions()" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[9px] px-4 py-1 rounded border border-red-500/50 transition font-bold uppercase">Close All Positions</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
@@ -118,16 +119,12 @@
     </div>
 
     <script>
-        // 1. IDENTITY: Get the user details from the login page
         const user = JSON.parse(localStorage.getItem('currentUser'));
-        
-        // Safety check: if not logged in, go back to login
         if(!user) { window.location.href = "login.html"; }
 
         document.getElementById('welcomeUser').innerText = `Authorized Access: ${user.user}`;
         if (user.role === 'admin') { document.getElementById('adminPanel').classList.remove('hidden-admin'); }
 
-        // 2. CHART: Load TradingView
         let tvWidget;
         function loadChart(symbol = "FX:EURUSD") {
             tvWidget = new TradingView.widget({
@@ -138,28 +135,54 @@
         function changeSymbol(newSym) { loadChart(newSym); }
         loadChart();
 
-        // 3. STATS: Initialize empty charts
         const ctxs = ['performanceChart', 'riskChart', 'pairPieChart'].map(id => document.getElementById(id).getContext('2d'));
-        const perfChart = new Chart(ctxs[0], { type: 'line', data: { labels: ['Point 1','Point 2','Point 3','Point 4'], datasets: [{label: 'Equity Curve', data: [0, 0, 0, 0], borderColor: '#2563eb'}]}});
-        new Chart(ctxs[1], { type: 'bar', data: { labels: ['M','T','W','T','F'], datasets: [{label: 'Risk', data: [0, 0, 0, 0, 0], backgroundColor: '#ef4444'}]}});
+        const perfChart = new Chart(ctxs[0], { type: 'line', data: { labels: ['P1','P2','P3','P4'], datasets: [{label: 'Equity', data: [0, 0, 0, 0], borderColor: '#2563eb'}]}});
+        new Chart(ctxs[1], { type: 'bar', data: { labels: ['M','T','W','T','F'], datasets: [{label: 'Risk', data: [0,0,0,0,0], backgroundColor: '#ef4444'}]}});
         new Chart(ctxs[2], { type: 'doughnut', data: { labels: ['Used', 'Free'], datasets: [{data: [0, 100], backgroundColor: ['#2563eb', '#1e293b']}]}});
 
-        // 4. TRADING: Buy/Sell Logic
+        // --- UPDATED: REAL TRADING FUNCTION ---
         async function placeTrade(side) {
             const size = document.getElementById('lotSize').value;
-            const sym = document.getElementById('symbolSelect').value;
-            alert(`Executing ${side} order for ${size} lots. (Connecting to Eightcap...)`);
+            const rawSym = document.getElementById('symbolSelect').value;
+            const sym = rawSym.split(':')[1] || rawSym;
+            const btn = event.target;
+            const originalText = btn.innerText;
+
+            btn.innerText = "WAIT...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/trade', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        accountId: user.account,
+                        symbol: sym,
+                        type: side === 'BUY' ? 'ORDER_TYPE_BUY' : 'ORDER_TYPE_SELL',
+                        lots: parseFloat(size)
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    updateTerminal(); 
+                } else {
+                    alert("Trade Error: " + result.error);
+                }
+            } catch (err) {
+                alert("Server Error");
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
         }
 
-        // 5. REFRESH: Fetch live data from MetaApi
         async function updateTerminal() {
             try {
-                // Request data from our API using the logged-in account ID
                 const res = await fetch(`/api/getStats?accountId=${user.account}`); 
                 const data = await res.json();
                 
                 if (data.success) {
-                    // Update Surveillance Table
                     const traderBody = document.getElementById('trader-rows');
                     traderBody.innerHTML = `
                         <tr class="hover:bg-white/5">
@@ -171,7 +194,6 @@
                             <td class="p-4 text-center">---</td>
                         </tr>`;
 
-                    // Update Positions Table
                     const posBody = document.getElementById('position-rows');
                     if (data.positions && data.positions.length > 0) {
                         posBody.innerHTML = '';
@@ -179,12 +201,12 @@
                             posBody.innerHTML += `
                                 <tr class="hover:bg-white/5 border-b border-slate-800/30">
                                     <td class="p-4 font-bold text-white">${pos.symbol}</td>
-                                    <td class="p-4"><span class="${pos.type.includes('BUY') ? 'text-green-500' : 'text-red-500'} font-bold">${pos.type}</span></td>
+                                    <td class="p-4"><span class="${pos.type.includes('BUY') ? 'text-green-500' : 'text-red-500'} font-bold">${pos.type.replace('ORDER_TYPE_', '')}</span></td>
                                     <td class="p-4 font-mono text-slate-300">${pos.lots}</td>
                                     <td class="p-4 text-slate-400">${pos.openPrice}</td>
                                     <td class="p-4 text-right font-black ${pos.pnl >= 0 ? 'text-green-400' : 'text-red-400'}">$${pos.pnl.toFixed(2)}</td>
                                     <td class="p-4 text-center">
-                                         <button onclick="managePosition('${pos.id}', 'FULL')" class="bg-red-500 text-white text-[9px] px-3 py-1 rounded font-bold uppercase">Close</button>
+                                         <button onclick="managePosition('${pos.id}')" class="bg-red-500 text-white text-[9px] px-3 py-1 rounded font-bold uppercase">Close</button>
                                     </td>
                                 </tr>`;
                         });
@@ -192,7 +214,6 @@
                         posBody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-600 text-[10px] uppercase italic">No active positions</td></tr>`;
                     }
 
-                    // Update the Chart with live Equity
                     perfChart.data.datasets[0].data.push(data.equity);
                     if(perfChart.data.datasets[0].data.length > 10) perfChart.data.datasets[0].data.shift();
                     perfChart.update();
@@ -200,13 +221,14 @@
             } catch (err) { console.error("Sync Error:", err); }
         }
 
-        async function managePosition(id, type) {
-            confirm(`Are you sure you want to close position ${id}?`);
+        async function managePosition(id) {
+            if(confirm("Close this trade?")) {
+                // Here you would add a call to a 'close' API
+                alert("Closing position " + id);
+            }
         }
 
         function logout() { localStorage.removeItem('currentUser'); window.location.href = "login.html"; }
-        
-        // Update every 10 seconds for a "Live" feel
         setInterval(updateTerminal, 10000);
         updateTerminal();
     </script>
