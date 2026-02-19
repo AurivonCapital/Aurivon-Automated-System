@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><title>AURIVON | Secure Registration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body { background-color: #020617; color: white; }</style>
+</head>
+<body class="flex items-center justify-center h-screen p-6">
+    <div class="max-w-md w-full bg-slate-900/50 p-8 rounded-3xl border border-white/10 backdrop-blur-md">
+        <h2 class="text-2xl font-black italic mb-6">REGISTER <span class="text-blue-600">TRADER</span></h2>
+        <div class="space-y-4">
+            <input type="text" id="regUser" placeholder="Username" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl">
+            <input type="text" id="regAcc" placeholder="MetaApi Account ID" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl">
+            <input type="password" id="regPass" placeholder="Password" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl">
+            <button onclick="register()" class="w-full bg-blue-600 p-3 rounded-xl font-bold uppercase tracking-widest hover:bg-blue-500 transition">Create Session</button>
+        </div>
+        <p class="text-[10px] text-slate-500 mt-6 text-center">ACCESS ENCRYPTED VIA LOCALSTORAGE PROVIDER</p>
+    </div>
+
+    <script>
+        function register() {
+            const newUser = {
+                user: document.getElementById('regUser').value,
+                account: document.getElementById('regAcc').value,
+                pass: document.getElementById('regPass').value,
+                role: 'admin'
+            };
+            
+            // In a real app, this goes to a database. 
+            // For now, we store it so login.html can find it.
+            localStorage.setItem('registeredUser', JSON.stringify(newUser));
+            alert("Registration Complete! Redirecting to Login...");
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>
