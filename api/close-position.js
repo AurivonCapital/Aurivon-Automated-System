@@ -1,4 +1,4 @@
-const MetaApi = require('metaapi.cloud-sdk').default;
+import MetaApi from 'metaapi.cloud-sdk';
 
 // Initialize MetaApi with your token from Vercel Environment Variables
 const metaApi = new MetaApi(process.env.METAAPI_TOKEN);
@@ -19,8 +19,8 @@ export default async function handler(req, res) {
     await connection.waitSynchronized();
 
     // 2. Execute the close
-    // If volume is provided (e.g. 0.5), it does a partial close.
-    // If volume is null, it closes the whole thing.
+    // If volume is provided (e.g. 0.05), it does a partial close.
+    // If volume is null, it closes the whole position.
     console.log(`Closing position ${positionId} for account ${accountId} with volume: ${volume || 'FULL'}`);
     
     await connection.closePosition(positionId, {
