@@ -3,43 +3,41 @@ import MetaApi from 'metaapi.cloud-sdk';
 const token = process.env.METAAPI_TOKEN;
 const api = new MetaApi(token);
 
-const traderAccounts = [
-    "d769e348-5db8-4df0-97f9-5b45bdb8b8c3", 
-    "ACCOUNT_ID_2", "ACCOUNT_ID_3", "ACCOUNT_ID_4", "ACCOUNT_ID_5",
-    "ACCOUNT_ID_6", "ACCOUNT_ID_7", "ACCOUNT_ID_8", "ACCOUNT_ID_9", "ACCOUNT_ID_10",
-    "ACCOUNT_ID_11", "ACCOUNT_ID_12", "ACCOUNT_ID_13", "ACCOUNT_ID_14", "ACCOUNT_ID_15",
-    "ACCOUNT_ID_16", "ACCOUNT_ID_17", "ACCOUNT_ID_18", "ACCOUNT_ID_19", "ACCOUNT_ID_20"
-];
+export default async function handler(req, res) {
+    const { accountId } = req.query;
 
-export default async function dashboardHandler(req, res) {
+    if (!accountId) return res.status(400).json({ error: "Account ID required" });
+
     try {
-        const metaStats = api.metaStatsApi;
+        const account = await api.metatraderAccountApi.getAccount(accountId);
+        
+        // Connect to the real-time terminal for this account
+        const connection = account.getStreamingConnection();
+        await connection.connect();
+        await connection.waitSynchronized();
 
-        const dashboardData = await Promise.all(
-            traderAccounts.map(async (id) => {
-                try {
-                    if (id.includes("ACCOUNT_ID")) {
-                        return { accountId: id, status: "Empty Slot", balance: 0, equity: 0, profit: 0 };
-                    }
-                    
-                    // This part fetches the real numbers
-                    const stats = await metaStats.getMetrics(id);
-                    return {
-                        accountId: id,
-                        status: "Online",
-                        balance: stats.balance || 0,
-                        equity: stats.equity || 0,
-                        profit: (stats.equity - stats.balance) || 0
-                    };
-                } catch (e) {
-                    // If MetaApi can't find the account, it shows Offline
-                    return { accountId: id, status: "Offline", balance: 0, equity: 0, profit: 0 };
-                }
-            })
-        );
+        // Fetch Balance, Equity, and Open Positions
+        const accountState = connection.terminalState.accountInformation;
+        const positions = connection.terminalState.positions;
 
-        res.status(200).json(dashboardData);
+        res.status(200).json({
+            success: true,
+            balance: accountState.balance,
+            equity: accountState.equity,
+            profit: accountState.profit,
+            margin: accountState.margin,
+            positions: positions.map(p => ({
+                id: p.id,
+                symbol: p.symbol,
+                type: p.type,
+                lots: p.volume,
+                openPrice: p.openPrice,
+                pnl: p.unrealizedProfit
+            }))
+        });
+
     } catch (error) {
-        res.status(500).json({ error: "Connection Error" });
+        console.error("MetaApi Error:", error.message);
+        res.status(500).json({ error: "Failed to fetch live data" });
     }
 }
