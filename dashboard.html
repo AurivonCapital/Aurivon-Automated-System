@@ -13,7 +13,6 @@
         .trading-btn { transition: all 0.2s; border: 1px solid transparent; }
         .trading-btn:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
         .hidden-admin { display: none !important; }
-        /* Style for the 'x' on the close button */
         .close-btn-container { position: relative; display: inline-block; cursor: pointer; }
         .x-label { position: absolute; top: -4px; left: -4px; font-size: 8px; font-weight: bold; background: #ef4444; color: white; border-radius: 50%; width: 12px; height: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid #020617; pointer-events: none; }
     </style>
@@ -143,11 +142,8 @@
         }
 
         async function executeAction(actionType) {
-            // Get current lots from the modal text to calculate partial
             const infoText = document.getElementById('modalInfo').innerText;
             const currentLots = parseFloat(infoText.split('Lots: ')[1]);
-            
-            // If PARTIAL, close 50%. If FULL, volume is undefined so MetaApi closes all.
             const volumeToClose = (actionType === 'PARTIAL') ? (currentLots / 2).toFixed(2) : null;
 
             try {
@@ -170,6 +166,28 @@
                 }
             } catch (err) {
                 alert("Server Connection Error");
+            }
+        }
+
+        // --- EMERGENCY CLOSE ALL ---
+        async function closeAllPositions() {
+            if(!confirm("⚠️ WARNING: This will close ALL open positions. Proceed?")) return;
+
+            try {
+                const response = await fetch('/api/close-all', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accountId: user.account })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message);
+                    updateTerminal();
+                } else {
+                    alert("Close All Error: " + result.error);
+                }
+            } catch (err) {
+                alert("Emergency Close Failed: Check Connection");
             }
         }
 
