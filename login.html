@@ -19,11 +19,15 @@
         <div class="login-card p-10 rounded-[2.5rem] shadow-2xl">
             <div class="space-y-6">
                 <div>
-                    <label class="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-2">Trader Email / ID</label>
-                    <input id="traderID" type="text" placeholder="Enter your registered email" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition">
+                    <label class="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-2">Trader Email</label>
+                    <input id="traderID" type="text" placeholder="name@email.com" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition">
                 </div>
-                <button onclick="checkAccess()" id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl uppercase tracking-widest transition shadow-lg shadow-blue-600/20">Verify & Access</button>
-                <p id="errorMsg" class="text-red-500 text-[10px] font-bold uppercase text-center hidden">No active evaluation found for this ID</p>
+                <div>
+                    <label class="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-2">Access Key</label>
+                    <input id="accessKey" type="password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition">
+                </div>
+                <button onclick="checkAccess()" id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl uppercase tracking-widest transition shadow-lg shadow-blue-600/20">Access Terminal</button>
+                <p id="errorMsg" class="text-red-500 text-[10px] font-bold uppercase text-center hidden">Invalid Credentials</p>
             </div>
         </div>
     </div>
@@ -31,35 +35,32 @@
     <script>
         async function checkAccess() {
             const idInput = document.getElementById('traderID').value;
+            const keyInput = document.getElementById('accessKey').value;
             const btn = document.getElementById('loginBtn');
             const error = document.getElementById('errorMsg');
 
-            if(!idInput) return;
+            if(!idInput || !keyInput) return;
 
-            // Show "Loading" state
             btn.innerText = "VERIFYING...";
             error.classList.add('hidden');
 
             try {
-                // This talks to our new api/search-account.js file
-                const response = await fetch(`/api/search-account?traderID=${idInput}`);
+                // We send both to our search API
+                const response = await fetch(`/api/search-account?traderID=${idInput}&key=${keyInput}`);
                 const data = await response.json();
 
                 if (data.success) {
-                    // Save the account found in MetaApi to the browser memory
                     localStorage.setItem('currentUser', JSON.stringify({
-                        user: data.account.name,
+                        user: idInput,
                         account: data.account.id,
                         role: "trader"
                     }));
-                    // Go to dashboard
                     window.location.href = "dashboard.html";
                 } else {
                     error.classList.remove('hidden');
                     btn.innerText = "ACCESS TERMINAL";
                 }
             } catch (err) {
-                console.error("Login error:", err);
                 btn.innerText = "ACCESS TERMINAL";
             }
         }
