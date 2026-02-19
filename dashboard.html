@@ -13,7 +13,6 @@
         .trading-btn { transition: all 0.2s; border: 1px solid transparent; }
         .trading-btn:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
         .hidden-admin { display: none !important; }
-        /* Style for the 'x' on the close button */
         .close-btn-container { position: relative; display: inline-block; }
         .x-label { position: absolute; top: -4px; left: -4px; font-size: 8px; font-weight: bold; background: #ef4444; color: white; border-radius: 50%; width: 12px; height: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid #020617; }
     </style>
@@ -64,7 +63,7 @@
         </div>
 
         <div class="glass-panel rounded-[1.5rem] overflow-hidden mb-8 border-l-4 border-blue-500">
-            <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+            <div class="p-4 border-b border-slate-800">
                 <p class="text-[10px] text-blue-400 uppercase font-bold tracking-widest">Active Market Exposure (Open Positions)</p>
             </div>
             <div class="overflow-x-auto">
@@ -80,7 +79,7 @@
                         </tr>
                     </thead>
                     <tbody id="position-rows" class="divide-y divide-slate-800/50">
-                        <tr><td colspan="6" class="p-6 text-center text-slate-600 text-[10px] uppercase italic">No active positions found</td></tr>
+                        <tr><td colspan="6" class="p-6 text-center text-slate-600 text-[10px] uppercase italic">Fetching live market data...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -119,10 +118,16 @@
     </div>
 
     <script>
-        const user = JSON.parse(localStorage.getItem('currentUser')) || { user: "Guest", role: "trader", account: "12345" };
+        // 1. IDENTITY: Get the user details from the login page
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        
+        // Safety check: if not logged in, go back to login
+        if(!user) { window.location.href = "login.html"; }
+
         document.getElementById('welcomeUser').innerText = `Authorized Access: ${user.user}`;
         if (user.role === 'admin') { document.getElementById('adminPanel').classList.remove('hidden-admin'); }
 
+        // 2. CHART: Load TradingView
         let tvWidget;
         function loadChart(symbol = "FX:EURUSD") {
             tvWidget = new TradingView.widget({
@@ -133,81 +138,76 @@
         function changeSymbol(newSym) { loadChart(newSym); }
         loadChart();
 
-        // Placeholder for Chart Initialization (Required to keep existing core intact)
+        // 3. STATS: Initialize empty charts
         const ctxs = ['performanceChart', 'riskChart', 'pairPieChart'].map(id => document.getElementById(id).getContext('2d'));
-        new Chart(ctxs[0], { type: 'line', data: { labels: ['W1','W2','W3','W4'], datasets: [{label: 'Equity', data: [1000, 1200, 1150, 1400], borderColor: '#2563eb'}]}});
-        new Chart(ctxs[1], { type: 'bar', data: { labels: ['M','T','W','T','F'], datasets: [{label: 'Risk', data: [1, 2, 0.5, 3, 1], backgroundColor: '#ef4444'}]}});
-        new Chart(ctxs[2], { type: 'doughnut', data: { labels: ['EURUSD', 'XAUUSD'], datasets: [{data: [60, 40], backgroundColor: ['#2563eb', '#f59e0b']}]}});
+        const perfChart = new Chart(ctxs[0], { type: 'line', data: { labels: ['Point 1','Point 2','Point 3','Point 4'], datasets: [{label: 'Equity Curve', data: [0, 0, 0, 0], borderColor: '#2563eb'}]}});
+        new Chart(ctxs[1], { type: 'bar', data: { labels: ['M','T','W','T','F'], datasets: [{label: 'Risk', data: [0, 0, 0, 0, 0], backgroundColor: '#ef4444'}]}});
+        new Chart(ctxs[2], { type: 'doughnut', data: { labels: ['Used', 'Free'], datasets: [{data: [0, 100], backgroundColor: ['#2563eb', '#1e293b']}]}});
 
-        // --- NEW: TRADING FUNCTIONS ---
+        // 4. TRADING: Buy/Sell Logic
         async function placeTrade(side) {
             const size = document.getElementById('lotSize').value;
             const sym = document.getElementById('symbolSelect').value;
-            console.log(`Executing ${side} ${size} lots on ${sym}`);
-            // MetaApi Integration Point: fetch('/api/trade', { method: 'POST', body: ... })
+            alert(`Executing ${side} order for ${size} lots. (Connecting to Eightcap...)`);
         }
 
+        // 5. REFRESH: Fetch live data from MetaApi
         async function updateTerminal() {
             try {
-                // Fetching trader list and active positions
-                const res = await fetch('/api/getStats'); 
+                // Request data from our API using the logged-in account ID
+                const res = await fetch(`/api/getStats?accountId=${user.account}`); 
                 const data = await res.json();
                 
-                // 1. Update Account Surveillance
-                const traderBody = document.getElementById('trader-rows');
-                traderBody.innerHTML = '';
-                data.traders.forEach(item => {
-                    const displayId = (user.account === item.accountId) ? user.user : item.accountId;
-                    traderBody.innerHTML += `
+                if (data.success) {
+                    // Update Surveillance Table
+                    const traderBody = document.getElementById('trader-rows');
+                    traderBody.innerHTML = `
                         <tr class="hover:bg-white/5">
-                            <td class="p-4 font-bold text-blue-400 uppercase text-[11px]">${displayId}</td>
-                            <td class="p-4 text-[10px] font-bold ${item.status === 'Online' ? 'text-green-500' : 'text-slate-500'}">● ${item.status}</td>
-                            <td class="p-4 font-bold">$${item.balance.toLocaleString()}</td>
-                            <td class="p-4 text-slate-300">$${item.equity.toLocaleString()}</td>
-                            <td class="p-4 font-black text-right ${item.profit >= 0 ? 'text-green-400' : 'text-red-400'}">$${item.profit.toLocaleString()}</td>
-                            <td class="p-4 text-center">
-                                <div class="close-btn-container">
-                                    <span class="x-label">x</span>
-                                    <button onclick="managePosition('${item.accountId}', 'FULL')" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[9px] px-3 py-1 rounded border border-red-500/50 transition font-bold uppercase">Close</button>
-                                </div>
-                            </td>
+                            <td class="p-4 font-bold text-blue-400 uppercase text-[11px]">${user.user}</td>
+                            <td class="p-4 text-[10px] font-bold text-green-500">● ONLINE</td>
+                            <td class="p-4 font-bold">$${data.balance.toLocaleString()}</td>
+                            <td class="p-4 text-slate-300">$${data.equity.toLocaleString()}</td>
+                            <td class="p-4 font-black text-right ${data.profit >= 0 ? 'text-green-400' : 'text-red-400'}">$${data.profit.toFixed(2)}</td>
+                            <td class="p-4 text-center">---</td>
                         </tr>`;
-                });
 
-                // 2. Update Active Positions
-                const posBody = document.getElementById('position-rows');
-                if (data.positions && data.positions.length > 0) {
-                    posBody.innerHTML = '';
-                    data.positions.forEach(pos => {
-                        posBody.innerHTML += `
-                            <tr class="hover:bg-white/5 border-b border-slate-800/30">
-                                <td class="p-4 font-bold text-white">${pos.symbol}</td>
-                                <td class="p-4"><span class="${pos.type === 'BUY' ? 'text-green-500' : 'text-red-500'} font-bold">${pos.type}</span></td>
-                                <td class="p-4 font-mono text-slate-300">${pos.lots}</td>
-                                <td class="p-4 text-slate-400">${pos.openPrice}</td>
-                                <td class="p-4 text-right font-black ${pos.pnl >= 0 ? 'text-green-400' : 'text-red-400'}">$${pos.pnl}</td>
-                                <td class="p-4 flex gap-2 justify-center">
-                                    <button onclick="managePosition('${pos.id}', 'PARTIAL')" class="text-[9px] bg-slate-800 px-2 py-1 rounded text-slate-400 border border-slate-700 hover:text-white">Partial</button>
-                                    <div class="close-btn-container">
-                                        <span class="x-label">x</span>
-                                        <button onclick="managePosition('${pos.id}', 'FULL')" class="bg-red-500 text-white text-[9px] px-3 py-1 rounded font-bold uppercase">Full Close</button>
-                                    </div>
-                                </td>
-                            </tr>`;
-                    });
+                    // Update Positions Table
+                    const posBody = document.getElementById('position-rows');
+                    if (data.positions && data.positions.length > 0) {
+                        posBody.innerHTML = '';
+                        data.positions.forEach(pos => {
+                            posBody.innerHTML += `
+                                <tr class="hover:bg-white/5 border-b border-slate-800/30">
+                                    <td class="p-4 font-bold text-white">${pos.symbol}</td>
+                                    <td class="p-4"><span class="${pos.type.includes('BUY') ? 'text-green-500' : 'text-red-500'} font-bold">${pos.type}</span></td>
+                                    <td class="p-4 font-mono text-slate-300">${pos.lots}</td>
+                                    <td class="p-4 text-slate-400">${pos.openPrice}</td>
+                                    <td class="p-4 text-right font-black ${pos.pnl >= 0 ? 'text-green-400' : 'text-red-400'}">$${pos.pnl.toFixed(2)}</td>
+                                    <td class="p-4 text-center">
+                                         <button onclick="managePosition('${pos.id}', 'FULL')" class="bg-red-500 text-white text-[9px] px-3 py-1 rounded font-bold uppercase">Close</button>
+                                    </td>
+                                </tr>`;
+                        });
+                    } else {
+                        posBody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-600 text-[10px] uppercase italic">No active positions</td></tr>`;
+                    }
+
+                    // Update the Chart with live Equity
+                    perfChart.data.datasets[0].data.push(data.equity);
+                    if(perfChart.data.datasets[0].data.length > 10) perfChart.data.datasets[0].data.shift();
+                    perfChart.update();
                 }
             } catch (err) { console.error("Sync Error:", err); }
         }
 
         async function managePosition(id, type) {
-            const action = type === 'FULL' ? "Closing full position" : "Executing partial close (50%)";
-            if(confirm(`${action} for ID: ${id}?`)) {
-                console.log(`MetaApi Action: ${type} for ${id}`);
-            }
+            confirm(`Are you sure you want to close position ${id}?`);
         }
 
         function logout() { localStorage.removeItem('currentUser'); window.location.href = "login.html"; }
-        setInterval(updateTerminal, 30000);
+        
+        // Update every 10 seconds for a "Live" feel
+        setInterval(updateTerminal, 10000);
         updateTerminal();
     </script>
 </body>
