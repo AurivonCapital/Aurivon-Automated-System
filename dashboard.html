@@ -13,8 +13,9 @@
         .trading-btn { transition: all 0.2s; border: 1px solid transparent; }
         .trading-btn:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
         .hidden-admin { display: none !important; }
-        .close-btn-container { position: relative; display: inline-block; }
-        .x-label { position: absolute; top: -4px; left: -4px; font-size: 8px; font-weight: bold; background: #ef4444; color: white; border-radius: 50%; width: 12px; height: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid #020617; }
+        /* Style for the 'x' on the close button */
+        .close-btn-container { position: relative; display: inline-block; cursor: pointer; }
+        .x-label { position: absolute; top: -4px; left: -4px; font-size: 8px; font-weight: bold; background: #ef4444; color: white; border-radius: 50%; width: 12px; height: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid #020617; pointer-events: none; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -30,16 +31,10 @@
                         <option value="FX:EURUSD">EURUSD</option>
                         <option value="FX:GBPUSD">GBPUSD</option>
                         <option value="FX:USDJPY">USDJPY</option>
-                        <option value="FX:USDCHF">USDCHF</option>
-                        <option value="FX:AUDUSD">AUDUSD</option>
-                        <option value="FX:USDCAD">USDCAD</option>
-                        <option value="FX:NZDUSD">NZDUSD</option>
                     </optgroup>
                     <optgroup label="Metals & Energy">
                         <option value="OANDA:XAUUSD">XAUUSD (Gold)</option>
-                        <option value="OANDA:XAGUSD">XAGUSD (Silver)</option>
                         <option value="TVC:USOIL">WTI Oil</option>
-                        <option value="TVC:UKOIL">Brent Oil</option>
                     </optgroup>
                 </select>
                 <button onclick="logout()" class="text-[10px] text-red-500 font-bold uppercase hover:bg-red-500/10 p-2 rounded">Logout</button>
@@ -64,8 +59,8 @@
 
         <div class="glass-panel rounded-[1.5rem] overflow-hidden mb-8 border-l-4 border-blue-500">
             <div class="p-4 border-b border-slate-800 flex justify-between items-center">
-                <p class="text-[10px] text-blue-400 uppercase font-bold tracking-widest">Active Market Exposure (Open Positions)</p>
-                <button onclick="closeAllPositions()" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[9px] px-4 py-1 rounded border border-red-500/50 transition font-bold uppercase">Close All Positions</button>
+                <p class="text-[10px] text-blue-400 uppercase font-bold tracking-widest">Active Market Exposure</p>
+                <button onclick="closeAllPositions()" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[9px] px-4 py-1 rounded border border-red-500/50 transition font-bold uppercase">Close All</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
@@ -80,7 +75,7 @@
                         </tr>
                     </thead>
                     <tbody id="position-rows" class="divide-y divide-slate-800/50">
-                        <tr><td colspan="6" class="p-6 text-center text-slate-600 text-[10px] uppercase italic">Fetching live market data...</td></tr>
+                        <tr><td colspan="6" class="p-6 text-center text-slate-600 text-[10px] uppercase italic">Initializing...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -91,7 +86,6 @@
                 <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Live Account Surveillance</p>
                 <div id="adminPanel" class="hidden-admin flex gap-4">
                      <span class="text-[10px] text-blue-400 font-bold">TOTAL EQUITY: <span id="totalEquity">$0.00</span></span>
-                     <span class="text-[10px] text-slate-400 font-bold">ACTIVE: <span id="activeCount">0/20</span></span>
                 </div>
             </div>
             <div class="overflow-x-auto">
@@ -118,6 +112,19 @@
         </div>
     </div>
 
+    <div id="closeModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-panel max-w-sm w-full p-6 rounded-3xl border border-white/10 shadow-2xl">
+            <h3 class="text-blue-400 font-black uppercase text-sm mb-2 tracking-tighter">Manage Position</h3>
+            <p id="modalInfo" class="text-xs text-slate-400 mb-6 uppercase font-bold">Symbol: EURUSD | Lots: 0.10</p>
+            
+            <div class="grid grid-cols-1 gap-3">
+                <button onclick="executeAction('PARTIAL')" class="bg-slate-800 hover:bg-slate-700 text-white text-[10px] py-3 rounded-xl font-bold uppercase border border-slate-700 transition">Partial Close (50%)</button>
+                <button onclick="executeAction('FULL')" class="bg-red-600 hover:bg-red-500 text-white text-[10px] py-3 rounded-xl font-bold uppercase transition shadow-lg shadow-red-900/20">Full Close Position</button>
+                <button onclick="toggleModal()" class="text-slate-500 text-[10px] mt-2 uppercase font-bold hover:text-white">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const user = JSON.parse(localStorage.getItem('currentUser'));
         if(!user) { window.location.href = "login.html"; }
@@ -125,6 +132,26 @@
         document.getElementById('welcomeUser').innerText = `Authorized Access: ${user.user}`;
         if (user.role === 'admin') { document.getElementById('adminPanel').classList.remove('hidden-admin'); }
 
+        let currentActiveTradeId = null;
+
+        // --- POPUP LOGIC ---
+        function toggleModal(id = null, info = "") {
+            const modal = document.getElementById('closeModal');
+            currentActiveTradeId = id;
+            if(info) document.getElementById('modalInfo').innerText = info;
+            modal.classList.toggle('hidden');
+        }
+
+        async function executeAction(actionType) {
+            const actionText = actionType === 'FULL' ? "Closing Full" : "Closing 50%";
+            console.log(`${actionText} for ID: ${currentActiveTradeId}`);
+            
+            // This is where you call your api/close.js later
+            alert(`MetaApi Request Sent: ${actionText} Position ${currentActiveTradeId}`);
+            toggleModal();
+        }
+
+        // --- TRADING VIEW & CHARTS ---
         let tvWidget;
         function loadChart(symbol = "FX:EURUSD") {
             tvWidget = new TradingView.widget({
@@ -140,53 +167,25 @@
         new Chart(ctxs[1], { type: 'bar', data: { labels: ['M','T','W','T','F'], datasets: [{label: 'Risk', data: [0,0,0,0,0], backgroundColor: '#ef4444'}]}});
         new Chart(ctxs[2], { type: 'doughnut', data: { labels: ['Used', 'Free'], datasets: [{data: [0, 100], backgroundColor: ['#2563eb', '#1e293b']}]}});
 
-        // --- UPDATED: REAL TRADING FUNCTION ---
+        // --- PLACE TRADE ---
         async function placeTrade(side) {
             const size = document.getElementById('lotSize').value;
-            const rawSym = document.getElementById('symbolSelect').value;
-            const sym = rawSym.split(':')[1] || rawSym;
-            const btn = event.target;
-            const originalText = btn.innerText;
-
-            btn.innerText = "WAIT...";
-            btn.disabled = true;
-
-            try {
-                const response = await fetch('/api/trade', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        accountId: user.account,
-                        symbol: sym,
-                        type: side === 'BUY' ? 'ORDER_TYPE_BUY' : 'ORDER_TYPE_SELL',
-                        lots: parseFloat(size)
-                    })
-                });
-
-                const result = await response.json();
-                if (result.success) {
-                    updateTerminal(); 
-                } else {
-                    alert("Trade Error: " + result.error);
-                }
-            } catch (err) {
-                alert("Server Error");
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
+            const sym = document.getElementById('symbolSelect').value.split(':')[1] || "EURUSD";
+            alert(`Opening ${side} ${size} lots on ${sym}`);
+            // Call fetch('/api/trade'...) here
         }
 
+        // --- REFRESH TERMINAL ---
         async function updateTerminal() {
             try {
                 const res = await fetch(`/api/getStats?accountId=${user.account}`); 
                 const data = await res.json();
                 
                 if (data.success) {
-                    const traderBody = document.getElementById('trader-rows');
-                    traderBody.innerHTML = `
+                    // Update Surveillance
+                    document.getElementById('trader-rows').innerHTML = `
                         <tr class="hover:bg-white/5">
-                            <td class="p-4 font-bold text-blue-400 uppercase text-[11px]">${user.user}</td>
+                            <td class="p-4 font-bold text-blue-400 text-[11px]">${user.user}</td>
                             <td class="p-4 text-[10px] font-bold text-green-500">● ONLINE</td>
                             <td class="p-4 font-bold">$${data.balance.toLocaleString()}</td>
                             <td class="p-4 text-slate-300">$${data.equity.toLocaleString()}</td>
@@ -194,38 +193,32 @@
                             <td class="p-4 text-center">---</td>
                         </tr>`;
 
+                    // Update Positions + Added the 'x' logic here
                     const posBody = document.getElementById('position-rows');
                     if (data.positions && data.positions.length > 0) {
                         posBody.innerHTML = '';
                         data.positions.forEach(pos => {
+                            const infoString = `Symbol: ${pos.symbol} | Lots: ${pos.lots}`;
                             posBody.innerHTML += `
                                 <tr class="hover:bg-white/5 border-b border-slate-800/30">
                                     <td class="p-4 font-bold text-white">${pos.symbol}</td>
-                                    <td class="p-4"><span class="${pos.type.includes('BUY') ? 'text-green-500' : 'text-red-500'} font-bold">${pos.type.replace('ORDER_TYPE_', '')}</span></td>
+                                    <td class="p-4 font-bold ${pos.type.includes('BUY') ? 'text-green-500' : 'text-red-500'}">${pos.type.replace('ORDER_TYPE_', '')}</td>
                                     <td class="p-4 font-mono text-slate-300">${pos.lots}</td>
                                     <td class="p-4 text-slate-400">${pos.openPrice}</td>
                                     <td class="p-4 text-right font-black ${pos.pnl >= 0 ? 'text-green-400' : 'text-red-400'}">$${pos.pnl.toFixed(2)}</td>
                                     <td class="p-4 text-center">
-                                         <button onclick="managePosition('${pos.id}')" class="bg-red-500 text-white text-[9px] px-3 py-1 rounded font-bold uppercase">Close</button>
+                                         <div class="close-btn-container" onclick="toggleModal('${pos.id}', '${infoString}')">
+                                            <span class="x-label">x</span>
+                                            <button class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[9px] px-3 py-1 rounded border border-red-500/50 transition font-bold uppercase">Close</button>
+                                         </div>
                                     </td>
                                 </tr>`;
                         });
                     } else {
                         posBody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-600 text-[10px] uppercase italic">No active positions</td></tr>`;
                     }
-
-                    perfChart.data.datasets[0].data.push(data.equity);
-                    if(perfChart.data.datasets[0].data.length > 10) perfChart.data.datasets[0].data.shift();
-                    perfChart.update();
                 }
-            } catch (err) { console.error("Sync Error:", err); }
-        }
-
-        async function managePosition(id) {
-            if(confirm("Close this trade?")) {
-                // Here you would add a call to a 'close' API
-                alert("Closing position " + id);
-            }
+            } catch (err) { console.error(err); }
         }
 
         function logout() { localStorage.removeItem('currentUser'); window.location.href = "login.html"; }
