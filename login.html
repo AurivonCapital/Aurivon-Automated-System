@@ -6,64 +6,100 @@
     <title>Trader Login | Aurivon Capital</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #020617; color: white; font-family: sans-serif; }
+        body { background-color: #020617; color: white; font-family: 'Inter', sans-serif; }
         .login-card { background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
+        input:-webkit-autofill { -webkit-box-shadow: 0 0 0 30px #0f172a inset !important; -webkit-text-fill-color: white !important; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen">
     <div class="w-full max-w-md px-6">
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-black italic uppercase tracking-tighter">AURIVON <span class="text-blue-600">CAPITAL</span></h1>
+            <h1 class="text-3xl font-black italic uppercase tracking-tighter text-white">AURIVON <span class="text-blue-600">CAPITAL</span></h1>
             <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-2">Institutional Terminal Access</p>
         </div>
+        
         <div class="login-card p-10 rounded-[2.5rem] shadow-2xl">
             <div class="space-y-6">
                 <div>
                     <label class="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-2">Trader Email</label>
-                    <input id="traderID" type="text" placeholder="name@email.com" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition">
+                    <input id="traderID" type="email" placeholder="name@email.com" 
+                        class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition">
                 </div>
                 <div>
                     <label class="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-2">Access Key</label>
-                    <input id="accessKey" type="password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition">
+                    <input id="accessKey" type="password" placeholder="••••••••" 
+                        class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition">
                 </div>
-                <button onclick="checkAccess()" id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl uppercase tracking-widest transition shadow-lg shadow-blue-600/20">Access Terminal</button>
-                <p id="errorMsg" class="text-red-500 text-[10px] font-bold uppercase text-center hidden">Invalid Credentials</p>
+                
+                <button onclick="handleLogin()" id="loginBtn" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl uppercase tracking-widest transition shadow-lg shadow-blue-600/20">
+                    Access Terminal
+                </button>
+                
+                <div id="statusContainer" class="text-center min-h-[20px]">
+                    <p id="errorMsg" class="text-red-500 text-[10px] font-bold uppercase hidden">Invalid Credentials. Check your welcome email.</p>
+                </div>
             </div>
         </div>
+        <p class="text-center text-slate-600 text-[9px] mt-8 uppercase tracking-widest">© 2026 Aurivon Capital Management</p>
     </div>
 
     <script>
-        async function checkAccess() {
-            const idInput = document.getElementById('traderID').value;
-            const keyInput = document.getElementById('accessKey').value;
+        async function handleLogin() {
+            const email = document.getElementById('traderID').value;
+            const pass = document.getElementById('accessKey').value;
             const btn = document.getElementById('loginBtn');
             const error = document.getElementById('errorMsg');
 
-            if(!idInput || !keyInput) return;
+            if(!email || !pass) return;
 
+            // UI Feedback
             btn.innerText = "VERIFYING...";
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
             error.classList.add('hidden');
 
             try {
-                // We send both to our search API
-                const response = await fetch(`/api/search-account?traderID=${idInput}&key=${keyInput}`);
-                const data = await response.json();
+                // This calls your serverless function to check the credentials
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, pass: pass })
+                });
 
-                if (data.success) {
+                const result = await response.json();
+
+                if(result.success) {
+                    // Save session data for dashboard.html to use
                     localStorage.setItem('currentUser', JSON.stringify({
-                        user: idInput,
-                        account: data.account.id,
-                        role: "trader"
+                        user: result.user.name,
+                        account: result.user.metaAccountId,
+                        role: result.user.role || 'trader'
                     }));
+                    
                     window.location.href = "dashboard.html";
                 } else {
                     error.classList.remove('hidden');
-                    btn.innerText = "ACCESS TERMINAL";
+                    resetBtn(btn);
                 }
             } catch (err) {
-                btn.innerText = "ACCESS TERMINAL";
+                console.error("Login error:", err);
+                error.innerText = "SERVER CONNECTION ERROR";
+                error.classList.remove('hidden');
+                resetBtn(btn);
             }
         }
+
+        function resetBtn(btn) {
+            btn.innerText = "ACCESS TERMINAL";
+            btn.disabled = false;
+            btn.classList.remove('opacity-50');
+        }
+
+        // Allow "Enter" key to submit
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
     </script>
 </body>
 </html>
