@@ -4,8 +4,10 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// 2. Create the Supabase client
-const supabase = createClient(supabaseUrl || '', supabaseKey || '');
+// 2. AMENDED: Only initialize the client if keys exist to prevent the "Required" crash
+const supabase = (supabaseUrl && supabaseKey) 
+    ? createClient(supabaseUrl, supabaseKey) 
+    : null;
 
 export default async function handler(req, res) {
     // Only allow POST requests
@@ -13,13 +15,13 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    // 3. Safety Check: Verify keys exist
-    if (!supabaseUrl || !supabaseKey) {
+    // 3. Safety Check: If supabase is null, the keys are missing in Vercel
+    if (!supabase) {
         console.error("CRITICAL ERROR: Supabase environment variables are missing in Vercel.");
         return res.status(500).json({ 
             success: false, 
             message: "SERVER CONFIGURATION ERROR",
-            details: "Missing API Keys"
+            details: "Vercel Environment Variables are not syncing."
         });
     }
 
