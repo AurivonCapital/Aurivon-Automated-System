@@ -23,11 +23,13 @@
                 <div>
                     <label class="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-2">Trader Email</label>
                     <input id="traderID" type="email" placeholder="name@email.com" 
+                        autocomplete="off"
                         class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition">
                 </div>
                 <div>
                     <label class="text-[10px] text-slate-500 uppercase font-bold tracking-widest block mb-2">Access Key</label>
                     <input id="accessKey" type="password" placeholder="••••••••" 
+                        autocomplete="new-password"
                         class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition">
                 </div>
                 
@@ -79,6 +81,8 @@
                     
                     window.location.href = "dashboard.html";
                 } else {
+                    // AMENDMENT: Use result.message so we can see what the server is actually complaining about
+                    error.innerText = result.message || "INVALID CREDENTIALS";
                     error.classList.remove('hidden');
                     resetBtn(btn);
                 }
