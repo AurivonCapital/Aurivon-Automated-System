@@ -1,9 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+// We added "|| ''" to prevent the 'required' error from stopping the code
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST' });
+
+    // This part helps us see what is happening in the Vercel Logs
+    if (!supabaseUrl || !supabaseKey) {
+        console.error("CRITICAL ERROR: Keys are missing in Vercel settings!");
+        return res.status(500).json({ error: "Server Configuration Error" });
+    }
 
     const { email, pass } = req.body;
 
@@ -15,13 +25,13 @@ export default async function handler(req, res) {
         .single();
 
     if (error || !trader) {
-        return res.status(401).json({ success: false, message: "Invalid credentials" });
+        return res.status(401).json({ success: false, message: "Invalid Credentials" });
     }
 
     return res.status(200).json({
         success: true,
         user: {
-            name: trader.email.split('@')[0],
+            name: trader.email,
             metaAccountId: trader.meta_account_id
         }
     });
