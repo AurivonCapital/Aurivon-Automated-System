@@ -1,10 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
-// 1. Initialize variables
+// AMENDMENT: Check both possible naming conventions for all keys
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-// 2. Safely initialize
 const supabase = (supabaseUrl && supabaseKey) 
     ? createClient(supabaseUrl, supabaseKey) 
     : null;
@@ -12,14 +11,10 @@ const supabase = (supabaseUrl && supabaseKey)
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST' });
 
-    // 3. Detailed Debugging Safety Check
     if (!supabase) {
-        console.error(`MISSING KEYS - URL: ${!!supabaseUrl}, KEY: ${!!supabaseKey}`);
-        return res.status(500).json({ 
-            success: false, 
-            message: "SERVER CONFIG ERROR",
-            details: "Vercel environment sync required."
-        });
+        // This log will now tell us exactly what is missing after your redeploy
+        console.error(`CONFIG ERROR - URL: ${!!supabaseUrl}, Key: ${!!supabaseKey}`);
+        return res.status(500).json({ success: false, message: "SERVER CONFIG ERROR" });
     }
 
     try {
@@ -37,10 +32,12 @@ export default async function handler(req, res) {
 
         return res.status(200).json({
             success: true,
-            user: { name: trader.email, metaAccountId: trader.meta_account_id }
+            user: { 
+                name: trader.email, 
+                metaAccountId: trader.meta_account_id 
+            }
         });
     } catch (err) {
-        console.error("Internal Error:", err);
         return res.status(500).json({ success: false, message: "INTERNAL ERROR" });
     }
 }
