@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// TEMP TEST: Hardcoding keys to bypass Vercel settings
-const supabaseUrl = 'https://ohzhcerywciamruionxj.supabase.co'; 
-const supabaseKey = 'sb_secret_zs05Z00qYvrwgbI_JspR0Q_VYE9gL8T'; 
+// We are going back to the secure way
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -11,7 +11,6 @@ export default async function handler(req, res) {
 
     const { email, pass } = req.body;
 
-    // This checks your Supabase table for the exact user
     const { data: trader, error } = await supabase
         .from('traders')
         .select('*')
@@ -20,7 +19,6 @@ export default async function handler(req, res) {
         .single();
 
     if (error || !trader) {
-        console.error("Database check failed:", error);
         return res.status(401).json({ success: false, message: "Invalid Credentials" });
     }
 
