@@ -1,34 +1,33 @@
 import { createClient } from '@supabase/supabase-js';
 
-// 1. Initialize variables from Vercel's environment
+// 1. Initialize variables (Checking both standard and Public naming)
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// 2. AMENDED: Only initialize the client if keys exist to prevent the "Required" crash
+// 2. Prevent the "Required" crash by checking keys before initializing
 const supabase = (supabaseUrl && supabaseKey) 
     ? createClient(supabaseUrl, supabaseKey) 
     : null;
 
 export default async function handler(req, res) {
-    // Only allow POST requests
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    // 3. Safety Check: If supabase is null, the keys are missing in Vercel
+    // 3. Safety Check for Environment Variables
     if (!supabase) {
-        console.error("CRITICAL ERROR: Supabase environment variables are missing in Vercel.");
+        console.error("CRITICAL: Environment variables missing. URL:", !!supabaseUrl, "KEY:", !!supabaseKey);
         return res.status(500).json({ 
             success: false, 
             message: "SERVER CONFIGURATION ERROR",
-            details: "Vercel Environment Variables are not syncing."
+            details: "API Keys are not being detected by Vercel."
         });
     }
 
     try {
         const { email, pass } = req.body;
 
-        // 4. Query the 'traders' table
+        // 4. Check 'traders' table
         const { data: trader, error } = await supabase
             .from('traders')
             .select('*')
@@ -36,16 +35,11 @@ export default async function handler(req, res) {
             .eq('access_key', pass)
             .single();
 
-        // 5. Handle Database Errors or Missing User
         if (error || !trader) {
-            console.log("Login failed for:", email);
-            return res.status(401).json({ 
-                success: false, 
-                message: "INVALID CREDENTIALS" 
-            });
+            return res.status(401).json({ success: false, message: "INVALID CREDENTIALS" });
         }
 
-        // 6. Success: Return user data
+        // 5. Success
         return res.status(200).json({
             success: true,
             user: {
@@ -56,10 +50,7 @@ export default async function handler(req, res) {
         });
 
     } catch (err) {
-        console.error("Unexpected Server Error:", err);
-        return res.status(500).json({ 
-            success: false, 
-            message: "INTERNAL SERVER ERROR" 
-        });
+        console.error("Internal Server Error:", err);
+        return res.status(500).json({ success: false, message: "INTERNAL SERVER ERROR" });
     }
 }
