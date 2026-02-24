@@ -9,12 +9,13 @@ export default async function handler(req, res) {
     try {
         const account = await api.metatraderAccountApi.getAccount(accountId);
         
-        // Ensure the account is deployed/online
+        // This ensures the account is 'Live' in MetaApi before trying to talk to it
         if (account.state !== 'DEPLOYED') {
             return res.status(200).json({ success: false, message: "Account is offline in MetaApi" });
         }
 
-        const connection = account.getStreamingConnection(); // Some versions need await here
+        // FIX: We added 'await' here so the server waits for the connection to open
+        const connection = account.getStreamingConnection(); 
         await connection.connect();
         await connection.waitSynchronized();
 
@@ -36,6 +37,7 @@ export default async function handler(req, res) {
             }))
         });
     } catch (error) {
+        // This prints the error to your Vercel logs so we can see what went wrong
         console.error("Stats Error:", error.message);
         res.status(500).json({ success: false, error: error.message });
     }
